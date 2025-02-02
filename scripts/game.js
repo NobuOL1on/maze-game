@@ -170,8 +170,8 @@ class MazeGame {
                         this.ball.y += Math.sin(angle) * overlap;
                         
                         // 反弹
-                        this.ball.velocity.x *= -0.5;
-                        this.ball.velocity.y *= -0.5;
+                        this.ball.velocity.x *= -0.9;
+                        this.ball.velocity.y *= -0.9;
                     }
                 }
             }
