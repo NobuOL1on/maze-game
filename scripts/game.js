@@ -174,8 +174,9 @@ class MazeGame {
                         const velocityDotNormal = this.ball.velocity.x * normal.x + this.ball.velocity.y * normal.y;
                         
                         // 反弹速度调整
-                        this.ball.velocity.x -= 2 * velocityDotNormal * normal.x;
-                        this.ball.velocity.y -= 2 * velocityDotNormal * normal.y;
+                        const bounceDamping = 0.5; // 反弹衰减系数
+                        this.ball.velocity.x -= 2 * velocityDotNormal * normal.x * bounceDamping;
+                        this.ball.velocity.y -= 2 * velocityDotNormal * normal.y * bounceDamping;
                         
                         // 减少反弹后的速度以模拟摩擦
                         this.ball.velocity.x *= 0.9; // 模拟摩擦
