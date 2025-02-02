@@ -46,6 +46,10 @@ class MazeGame {
             }
         };
 
+        // 定义特殊关卡类型
+        this.specialLevels = ['fog', 'antiGravity', 'invertColors'];
+        this.currentSpecialLevel = null;
+
         this.init();
     }
 
@@ -96,10 +100,10 @@ class MazeGame {
         window.addEventListener('deviceorientation', (event) => {
             if (!this.isPlaying) return;
             
-            // 将设备方向数据转换为加速度
-            const sensitivity = 0.03;  // 降低灵敏度，让小球移动更容易控制
-            this.ball.acceleration.x = event.gamma * sensitivity;
-            this.ball.acceleration.y = event.beta * sensitivity;
+            const sensitivity = 0.03;
+            const direction = this.currentSpecialLevel === 'antiGravity' ? -1 : 1;
+            this.ball.acceleration.x = event.gamma * sensitivity * direction;
+            this.ball.acceleration.y = event.beta * sensitivity * direction;
         });
     }
 
@@ -211,40 +215,55 @@ class MazeGame {
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // 绘制迷宫
+        // 应用特殊关卡效果
+        if (this.currentSpecialLevel === 'fog') {
+            this.ctx.fillStyle = '#000';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.save();
+            this.ctx.beginPath();
+            this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 5, 0, Math.PI * 2);
+            this.ctx.clip();
+        }
+
         for (let y = 0; y < this.maze.length; y++) {
             for (let x = 0; x < this.maze[0].length; x++) {
                 const cell = this.maze[y][x];
                 const cellX = x * this.cellSize;
                 const cellY = y * this.cellSize;
 
-                switch(cell) {
-                    case 1: // 墙
-                        this.ctx.fillStyle = '#333';
-                        this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
-                        break;
-                    case 3: // 终点，绘制圆圈
-                        this.ctx.beginPath();
-                        this.ctx.strokeStyle = '#333';
-                        this.ctx.lineWidth = 2;
-                        const radius = this.cellSize * 0.3;
-                        this.ctx.arc(
-                            cellX + this.cellSize / 2,
-                            cellY + this.cellSize / 2,
-                            radius,
-                            0,
-                            Math.PI * 2
-                        );
-                        this.ctx.stroke();
-                        break;
+                if (this.currentSpecialLevel === 'invertColors') {
+                    this.ctx.fillStyle = cell === 1 ? '#fff' : '#000';
+                } else {
+                    this.ctx.fillStyle = cell === 1 ? '#333' : '#fff';
+                }
+
+                if (cell === 1) {
+                    this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
+                } else if (cell === 3) {
+                    this.ctx.beginPath();
+                    this.ctx.strokeStyle = this.currentSpecialLevel === 'invertColors' ? '#fff' : '#333';
+                    this.ctx.lineWidth = 2;
+                    const radius = this.cellSize * 0.3;
+                    this.ctx.arc(
+                        cellX + this.cellSize / 2,
+                        cellY + this.cellSize / 2,
+                        radius,
+                        0,
+                        Math.PI * 2
+                    );
+                    this.ctx.stroke();
                 }
             }
         }
 
-        // 绘制黑色小球
+        if (this.currentSpecialLevel === 'fog') {
+            this.ctx.restore();
+        }
+
+        // 绘制小球
         this.ctx.beginPath();
         this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius, 0, Math.PI * 2);
-        this.ctx.fillStyle = '#000';
+        this.ctx.fillStyle = this.currentSpecialLevel === 'invertColors' ? '#fff' : '#000';
         this.ctx.fill();
         this.ctx.closePath();
 
@@ -296,6 +315,13 @@ class MazeGame {
         }
         this.maze[endY][endX] = 3; // 终点标记
         
+        // 确定是否为特殊关卡
+        if (this.level % 3 === 0) {
+            this.currentSpecialLevel = this.specialLevels[Math.floor(Math.random() * this.specialLevels.length)];
+        } else {
+            this.currentSpecialLevel = null;
+        }
+
         // 调整画布大小
         this.canvas.width = width * this.cellSize;
         this.canvas.height = height * this.cellSize;
