@@ -23,26 +23,7 @@ class MazeGame {
         this.maze = [];
         this.cellSize = 30; // 减小单元格尺寸以适应更大的迷宫
 
-        // 添加语言支持
-        this.language = localStorage.getItem('mazeGameLanguage') || 'en';
-        this.translations = {
-            en: {
-                start: 'Start Game',
-                pause: 'Pause',
-                level: 'Level',
-                permit: 'Allow Access',
-                permissionText: 'Game needs device orientation access',
-                levelComplete: 'Level Complete!'
-            },
-            zh: {
-                start: '开始游戏',
-                pause: '暂停',
-                level: '关卡',
-                permit: '允许访问',
-                permissionText: '游戏需要访问设备方向感应权限',
-                levelComplete: '过关！'
-            }
-        };
+        this.levelDisplay = document.getElementById('level-display');
 
         this.init();
     }
@@ -129,63 +110,83 @@ class MazeGame {
     }
 
     update() {
-        // 降低摩擦力
-        const friction = 0.99; // 原来是0.98，现在增加到0.99减少摩擦
+        // 更新小球速度，移除摩擦力
         this.ball.velocity.x += this.ball.acceleration.x;
         this.ball.velocity.y += this.ball.acceleration.y;
         
-        this.ball.velocity.x *= friction;
-        this.ball.velocity.y *= friction;
+        // 限制最大速度以防止穿墙
+        const maxSpeed = 5;
+        const currentSpeed = Math.sqrt(
+            this.ball.velocity.x * this.ball.velocity.x + 
+            this.ball.velocity.y * this.ball.velocity.y
+        );
+        
+        if (currentSpeed > maxSpeed) {
+            const scale = maxSpeed / currentSpeed;
+            this.ball.velocity.x *= scale;
+            this.ball.velocity.y *= scale;
+        }
 
-        // 更新小球位置
-        this.ball.x += this.ball.velocity.x;
-        this.ball.y += this.ball.velocity.y;
+        // 预测下一帧位置
+        const nextX = this.ball.x + this.ball.velocity.x;
+        const nextY = this.ball.y + this.ball.velocity.y;
 
-        // 添加与迷宫墙壁的碰撞检测
+        // 检查下一帧位置是否会发生碰撞
+        if (!this.checkCollision(nextX, nextY)) {
+            this.ball.x = nextX;
+            this.ball.y = nextY;
+        }
+
+        // 检查是否到达终点
         const cellX = Math.floor(this.ball.x / this.cellSize);
         const cellY = Math.floor(this.ball.y / this.cellSize);
+        if (this.maze[cellY][cellX] === 3) {
+            this.levelComplete();
+        }
+    }
 
-        // 检查周围的单元格是否是墙
+    checkCollision(x, y) {
+        const radius = this.ball.radius;
+        const cellSize = this.cellSize;
+        
+        // 检查小球周围的九个格子
         for (let dy = -1; dy <= 1; dy++) {
             for (let dx = -1; dx <= 1; dx++) {
-                const checkY = cellY + dy;
-                const checkX = cellX + dx;
+                const cellX = Math.floor((x + dx * radius) / cellSize);
+                const cellY = Math.floor((y + dy * radius) / cellSize);
                 
-                if (checkY >= 0 && checkY < this.maze.length &&
-                    checkX >= 0 && checkX < this.maze[0].length &&
-                    this.maze[checkY][checkX] === 1) {
+                if (cellY >= 0 && cellY < this.maze.length &&
+                    cellX >= 0 && cellX < this.maze[0].length &&
+                    this.maze[cellY][cellX] === 1) {
                     
-                    const wallX = checkX * this.cellSize;
-                    const wallY = checkY * this.cellSize;
+                    // 计算小球中心到墙壁的最短距离
+                    const wallX = cellX * cellSize;
+                    const wallY = cellY * cellSize;
                     
-                    // 简单的矩形-圆形碰撞检测
-                    const closestX = Math.max(wallX, Math.min(this.ball.x, wallX + this.cellSize));
-                    const closestY = Math.max(wallY, Math.min(this.ball.y, wallY + this.cellSize));
+                    const closestX = Math.max(wallX, Math.min(x, wallX + cellSize));
+                    const closestY = Math.max(wallY, Math.min(y, wallY + cellSize));
                     
-                    const distanceX = this.ball.x - closestX;
-                    const distanceY = this.ball.y - closestY;
+                    const distanceX = x - closestX;
+                    const distanceY = y - closestY;
                     const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
                     
-                    if (distance < this.ball.radius) {
-                        // 碰撞响应
-                        const overlap = this.ball.radius - distance;
+                    if (distance < radius) {
+                        // 发生碰撞，计算反弹
                         const angle = Math.atan2(distanceY, distanceX);
+                        const bounceX = Math.cos(angle);
+                        const bounceY = Math.sin(angle);
                         
-                        this.ball.x += Math.cos(angle) * overlap;
-                        this.ball.y += Math.sin(angle) * overlap;
+                        // 调整速度（反弹）
+                        const dot = this.ball.velocity.x * bounceX + this.ball.velocity.y * bounceY;
+                        this.ball.velocity.x = this.ball.velocity.x - 2 * dot * bounceX;
+                        this.ball.velocity.y = this.ball.velocity.y - 2 * dot * bounceY;
                         
-                        // 反弹
-                        this.ball.velocity.x *= -0.5;
-                        this.ball.velocity.y *= -0.5;
+                        return true;
                     }
                 }
             }
         }
-
-        // 检查是否到达终点
-        if (this.maze[cellY][cellX] === 3) {
-            this.levelComplete();
-        }
+        return false;
     }
 
     draw() {
@@ -231,7 +232,7 @@ class MazeGame {
         // 在游戏框外绘制关卡信息
         this.ctx.fillStyle = '#000';
         this.ctx.font = '20px Arial';
-        const levelText = `${this.translations[this.language].level}: ${this.level}`;
+        const levelText = `Level: ${this.level}`;
         this.ctx.fillText(levelText, 10, -10); // 移到画布上方
     }
 
@@ -306,6 +307,7 @@ class MazeGame {
 
     levelComplete() {
         this.level++;
+        this.levelDisplay.textContent = `Level: ${this.level}`;
         localStorage.setItem('mazeLevel', this.level);
         
         if (this.level > this.highScore) {
@@ -313,7 +315,7 @@ class MazeGame {
             localStorage.setItem('mazeHighScore', this.highScore);
         }
         
-        alert(this.translations[this.language].levelComplete);
+        alert('Level Complete!');
         this.generateMaze();
     }
 }
@@ -321,4 +323,5 @@ class MazeGame {
 // 当页面加载完成后初始化游戏
 window.addEventListener('load', () => {
     new MazeGame();
+}); 
 }); 
