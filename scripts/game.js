@@ -21,7 +21,28 @@ class MazeGame {
         this.level = parseInt(localStorage.getItem('mazeLevel')) || 1;
         this.highScore = parseInt(localStorage.getItem('mazeHighScore')) || 0;
         this.maze = [];
-        this.cellSize = 40; // 迷宫单元格大小
+        this.cellSize = 30; // 减小单元格尺寸以适应更大的迷宫
+
+        // 添加语言支持
+        this.language = localStorage.getItem('mazeGameLanguage') || 'en';
+        this.translations = {
+            en: {
+                start: 'Start Game',
+                pause: 'Pause',
+                level: 'Level',
+                permit: 'Allow Access',
+                permissionText: 'Game needs device orientation access',
+                levelComplete: 'Level Complete!'
+            },
+            zh: {
+                start: '开始游戏',
+                pause: '暂停',
+                level: '关卡',
+                permit: '允许访问',
+                permissionText: '游戏需要访问设备方向感应权限',
+                levelComplete: '过关！'
+            }
+        };
 
         this.init();
     }
@@ -108,12 +129,11 @@ class MazeGame {
     }
 
     update() {
-        // 更新小球速度
-        const friction = 0.98;
+        // 降低摩擦力
+        const friction = 0.99; // 原来是0.98，现在增加到0.99减少摩擦
         this.ball.velocity.x += this.ball.acceleration.x;
         this.ball.velocity.y += this.ball.acceleration.y;
         
-        // 应用摩擦力
         this.ball.velocity.x *= friction;
         this.ball.velocity.y *= friction;
 
@@ -183,30 +203,36 @@ class MazeGame {
                         this.ctx.fillStyle = '#333';
                         this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
                         break;
-                    case 2: // 起点
-                        this.ctx.fillStyle = '#4CAF50';
-                        this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
-                        break;
-                    case 3: // 终点
-                        this.ctx.fillStyle = '#f44336';
-                        this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
+                    case 3: // 终点，绘制圆圈
+                        this.ctx.beginPath();
+                        this.ctx.strokeStyle = '#333';
+                        this.ctx.lineWidth = 2;
+                        const radius = this.cellSize * 0.3;
+                        this.ctx.arc(
+                            cellX + this.cellSize / 2,
+                            cellY + this.cellSize / 2,
+                            radius,
+                            0,
+                            Math.PI * 2
+                        );
+                        this.ctx.stroke();
                         break;
                 }
             }
         }
 
-        // 绘制小球
+        // 绘制黑色小球
         this.ctx.beginPath();
         this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius, 0, Math.PI * 2);
-        this.ctx.fillStyle = '#2196F3';
+        this.ctx.fillStyle = '#000';
         this.ctx.fill();
         this.ctx.closePath();
 
-        // 绘制关卡信息
+        // 在游戏框外绘制关卡信息
         this.ctx.fillStyle = '#000';
         this.ctx.font = '20px Arial';
-        this.ctx.fillText(`关卡: ${this.level}`, 10, 30);
-        this.ctx.fillText(`最高分: ${this.highScore}`, 10, 60);
+        const levelText = `${this.translations[this.language].level}: ${this.level}`;
+        this.ctx.fillText(levelText, 10, -10); // 移到画布上方
     }
 
     gameLoop() {
@@ -219,26 +245,41 @@ class MazeGame {
 
     // 添加迷宫生成方法
     generateMaze() {
-        const width = Math.min(5 + Math.floor(this.level / 2), 15); // 随关卡增加宽度，最大15
-        const height = Math.min(7 + Math.floor(this.level / 2), 20); // 随关卡增加高度，最大20
+        // 增加初始迷宫大小
+        const baseWidth = 11; // 基础宽度增加
+        const baseHeight = 15; // 基础高度增加
+        const width = Math.min(baseWidth + Math.floor(this.level / 2), 25);
+        const height = Math.min(baseHeight + Math.floor(this.level / 2), 35);
         
-        // 初始化迷宫数组
         this.maze = Array(height).fill().map(() => Array(width).fill(1));
         
-        // 使用递归回溯算法生成迷宫
-        const startY = 1;
-        const startX = 1;
-        this.carvePassages(startY, startX);
+        // 使用改进的迷宫生成算法
+        this.carvePassages(1, 1);
         
         // 设置起点和终点
-        this.maze[1][1] = 2; // 起点
-        this.maze[height-2][width-2] = 3; // 终点
+        this.maze[1][1] = 0; // 起点不再特殊标记
         
-        // 调整画布大小以适应迷宫
+        // 确保终点可达
+        let endY = height - 2;
+        let endX = width - 2;
+        while (this.maze[endY][endX] === 1) {
+            if (this.maze[endY-1][endX] === 0) {
+                this.maze[endY][endX] = 0;
+                break;
+            }
+            if (this.maze[endY][endX-1] === 0) {
+                this.maze[endY][endX] = 0;
+                break;
+            }
+            endY--;
+            endX--;
+        }
+        this.maze[endY][endX] = 3; // 终点标记
+        
+        // 调整画布大小
         this.canvas.width = width * this.cellSize;
         this.canvas.height = height * this.cellSize;
         
-        // 重置小球位置到起点
         this.resetBall();
     }
 
@@ -272,7 +313,7 @@ class MazeGame {
             localStorage.setItem('mazeHighScore', this.highScore);
         }
         
-        alert(`恭喜通过第 ${this.level-1} 关！`);
+        alert(this.translations[this.language].levelComplete);
         this.generateMaze();
     }
 }
