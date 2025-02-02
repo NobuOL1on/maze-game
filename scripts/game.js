@@ -29,6 +29,7 @@ class MazeGame {
             en: {
                 start: 'Start Game',
                 pause: 'Pause',
+                reset: 'Reset',
                 level: 'Level',
                 permit: 'Allow Access',
                 permissionText: 'Game needs device orientation access',
@@ -37,6 +38,7 @@ class MazeGame {
             zh: {
                 start: '开始游戏',
                 pause: '暂停',
+                reset: '重置',
                 level: '关卡',
                 permit: '允许访问',
                 permissionText: '游戏需要访问设备方向感应权限',
@@ -57,7 +59,8 @@ class MazeGame {
 
         // 绑定事件处理
         this.startButton.addEventListener('click', () => this.startGame());
-        this.pauseButton.addEventListener('click', () => this.pauseGame());
+        this.pauseButton.addEventListener('click', () => this.resetBall());
+        this.pauseButton.textContent = this.translations[this.language].reset;
         this.permitButton.addEventListener('click', () => this.requestPermission());
 
         // 检查设备方向感应API是否可用
@@ -132,6 +135,15 @@ class MazeGame {
         // 更新速度
         this.ball.velocity.x += this.ball.acceleration.x;
         this.ball.velocity.y += this.ball.acceleration.y;
+        
+        // 限制速度
+        const maxSpeed = 5; // 设置最大速度
+        const speed = Math.sqrt(this.ball.velocity.x ** 2 + this.ball.velocity.y ** 2);
+        if (speed > maxSpeed) {
+            const scale = maxSpeed / speed;
+            this.ball.velocity.x *= scale;
+            this.ball.velocity.y *= scale;
+        }
         
         // 检测是否与墙壁接触
         let touchingWall = false;
@@ -236,10 +248,10 @@ class MazeGame {
         this.ctx.fill();
         this.ctx.closePath();
 
-        // 在左上角绘制关卡信息
+        // 在页面左上角绘制关卡信息
         this.ctx.fillStyle = '#000';
         this.ctx.font = 'bold 24px Arial';
-        const levelText = `${this.level}`;
+        const levelText = `LEVEL ${this.level}`;
         this.ctx.fillText(levelText, 10, 30);
     }
 
