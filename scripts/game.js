@@ -47,7 +47,7 @@ class MazeGame {
         };
 
         // 定义特殊关卡类型
-        this.specialLevels = ['fog', 'antiGravity', 'invertColors'];
+        this.specialLevels = ['fog', 'antiGravity'];
         this.currentSpecialLevel = null;
 
         this.init();
@@ -231,17 +231,13 @@ class MazeGame {
                 const cellX = x * this.cellSize;
                 const cellY = y * this.cellSize;
 
-                if (this.currentSpecialLevel === 'invertColors') {
-                    this.ctx.fillStyle = cell === 1 ? '#fff' : '#000';
-                } else {
-                    this.ctx.fillStyle = cell === 1 ? '#333' : '#fff';
-                }
+                this.ctx.fillStyle = cell === 1 ? '#333' : '#fff';
 
                 if (cell === 1) {
                     this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
                 } else if (cell === 3) {
                     this.ctx.beginPath();
-                    this.ctx.strokeStyle = this.currentSpecialLevel === 'invertColors' ? '#fff' : '#333';
+                    this.ctx.strokeStyle = '#333';
                     this.ctx.lineWidth = 2;
                     const radius = this.cellSize * 0.3;
                     this.ctx.arc(
@@ -263,7 +259,7 @@ class MazeGame {
         // 绘制小球
         this.ctx.beginPath();
         this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius, 0, Math.PI * 2);
-        this.ctx.fillStyle = this.currentSpecialLevel === 'invertColors' ? '#fff' : '#000';
+        this.ctx.fillStyle = '#000';
         this.ctx.fill();
         this.ctx.closePath();
 
