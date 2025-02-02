@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>重力迷宫</title>
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="controls">
+            <button id="startButton">开始游戏</button>
+            <button id="pauseButton" style="display: none;">暂停</button>
+        </div>
+        <div id="permission-prompt" style="display: none;">
+            <p>游戏需要访问设备方向感应权限</p>
+            <button id="permitButton">允许访问</button>
+        </div>
+    </div>
+    <script src="scripts/game.js"></script>
+</body>
+</html> 
