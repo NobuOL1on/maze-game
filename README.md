@@ -22,7 +22,7 @@
 - DeviceOrientation API
 
 ## 开发者
-[你的名字]
+[nobu]
 
 ## License
 MIT 
