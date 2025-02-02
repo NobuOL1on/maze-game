@@ -23,7 +23,26 @@ class MazeGame {
         this.maze = [];
         this.cellSize = 30; // 减小单元格尺寸以适应更大的迷宫
 
-        this.levelDisplay = document.getElementById('level-display');
+        // 添加语言支持
+        this.language = localStorage.getItem('mazeGameLanguage') || 'en';
+        this.translations = {
+            en: {
+                start: 'Start Game',
+                pause: 'Pause',
+                level: 'Level',
+                permit: 'Allow Access',
+                permissionText: 'Game needs device orientation access',
+                levelComplete: 'Level Complete!'
+            },
+            zh: {
+                start: '开始游戏',
+                pause: '暂停',
+                level: '关卡',
+                permit: '允许访问',
+                permissionText: '游戏需要访问设备方向感应权限',
+                levelComplete: '过关！'
+            }
+        };
 
         this.init();
     }
@@ -104,104 +123,64 @@ class MazeGame {
     }
 
     resizeCanvas() {
-        // 修改为竖向布局的尺寸计算
-        const maxWidth = Math.min(window.innerWidth - 20, 400);
-        const maxHeight = Math.min(window.innerHeight * 0.7, 600);
-        
-        // 确保画布始终保持竖向布局
-        this.canvas.width = maxWidth;
-        this.canvas.height = maxHeight;
-        
-        // 根据画布大小调整单元格尺寸
-        const mazeWidth = this.maze ? this.maze[0].length : 11;
-        const mazeHeight = this.maze ? this.maze.length : 15;
-        
-        this.cellSize = Math.min(
-            Math.floor(maxWidth / mazeWidth),
-            Math.floor(maxHeight / mazeHeight)
-        );
-        
+        this.canvas.width = Math.min(window.innerWidth - 20, 400);
+        this.canvas.height = Math.min(window.innerHeight * 0.7, 600);
         this.resetBall();
     }
 
     update() {
-        // 更新小球速度，移除摩擦力
         this.ball.velocity.x += this.ball.acceleration.x;
         this.ball.velocity.y += this.ball.acceleration.y;
         
-        // 限制最大速度以防止穿墙
-        const maxSpeed = 5;
-        const currentSpeed = Math.sqrt(
-            this.ball.velocity.x * this.ball.velocity.x + 
-            this.ball.velocity.y * this.ball.velocity.y
-        );
-        
-        if (currentSpeed > maxSpeed) {
-            const scale = maxSpeed / currentSpeed;
-            this.ball.velocity.x *= scale;
-            this.ball.velocity.y *= scale;
-        }
+        // 更新小球位置
+        this.ball.x += this.ball.velocity.x;
+        this.ball.y += this.ball.velocity.y;
 
-        // 预测下一帧位置
-        const nextX = this.ball.x + this.ball.velocity.x;
-        const nextY = this.ball.y + this.ball.velocity.y;
-
-        // 检查下一帧位置是否会发生碰撞
-        if (!this.checkCollision(nextX, nextY)) {
-            this.ball.x = nextX;
-            this.ball.y = nextY;
-        }
-
-        // 检查是否到达终点
+        // 添加与迷宫墙壁的碰撞检测
         const cellX = Math.floor(this.ball.x / this.cellSize);
         const cellY = Math.floor(this.ball.y / this.cellSize);
-        if (this.maze[cellY][cellX] === 3) {
-            this.levelComplete();
-        }
-    }
 
-    checkCollision(x, y) {
-        const radius = this.ball.radius;
-        const cellSize = this.cellSize;
-        
-        // 检查小球周围的九个格子
+        // 检查周围的单元格是否是墙
         for (let dy = -1; dy <= 1; dy++) {
             for (let dx = -1; dx <= 1; dx++) {
-                const cellX = Math.floor((x + dx * radius) / cellSize);
-                const cellY = Math.floor((y + dy * radius) / cellSize);
+                const checkY = cellY + dy;
+                const checkX = cellX + dx;
                 
-                if (cellY >= 0 && cellY < this.maze.length &&
-                    cellX >= 0 && cellX < this.maze[0].length &&
-                    this.maze[cellY][cellX] === 1) {
+                if (checkY >= 0 && checkY < this.maze.length &&
+                    checkX >= 0 && checkX < this.maze[0].length &&
+                    this.maze[checkY][checkX] === 1) {
                     
-                    // 计算小球中心到墙壁的最短距离
-                    const wallX = cellX * cellSize;
-                    const wallY = cellY * cellSize;
+                    const wallX = checkX * this.cellSize;
+                    const wallY = checkY * this.cellSize;
                     
-                    const closestX = Math.max(wallX, Math.min(x, wallX + cellSize));
-                    const closestY = Math.max(wallY, Math.min(y, wallY + cellSize));
+                    // 简单的矩形-圆形碰撞检测
+                    const closestX = Math.max(wallX, Math.min(this.ball.x, wallX + this.cellSize));
+                    const closestY = Math.max(wallY, Math.min(this.ball.y, wallY + this.cellSize));
                     
-                    const distanceX = x - closestX;
-                    const distanceY = y - closestY;
+                    const distanceX = this.ball.x - closestX;
+                    const distanceY = this.ball.y - closestY;
                     const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
                     
-                    if (distance < radius) {
-                        // 发生碰撞，计算反弹
+                    if (distance < this.ball.radius) {
+                        // 碰撞响应
+                        const overlap = this.ball.radius - distance;
                         const angle = Math.atan2(distanceY, distanceX);
-                        const bounceX = Math.cos(angle);
-                        const bounceY = Math.sin(angle);
                         
-                        // 调整速度（反弹）
-                        const dot = this.ball.velocity.x * bounceX + this.ball.velocity.y * bounceY;
-                        this.ball.velocity.x = this.ball.velocity.x - 2 * dot * bounceX;
-                        this.ball.velocity.y = this.ball.velocity.y - 2 * dot * bounceY;
+                        this.ball.x += Math.cos(angle) * overlap;
+                        this.ball.y += Math.sin(angle) * overlap;
                         
-                        return true;
+                        // 反弹
+                        this.ball.velocity.x *= -0.5;
+                        this.ball.velocity.y *= -0.5;
                     }
                 }
             }
         }
-        return false;
+
+        // 检查是否到达终点
+        if (this.maze[cellY][cellX] === 3) {
+            this.levelComplete();
+        }
     }
 
     draw() {
@@ -244,11 +223,11 @@ class MazeGame {
         this.ctx.fill();
         this.ctx.closePath();
 
-        // 在游戏框外绘制关卡信息
+        // 在左上角绘制关卡信息
         this.ctx.fillStyle = '#000';
-        this.ctx.font = '20px Arial';
-        const levelText = `Level: ${this.level}`;
-        this.ctx.fillText(levelText, 10, -10); // 移到画布上方
+        this.ctx.font = 'bold 24px Arial';
+        const levelText = `${this.level}`;
+        this.ctx.fillText(levelText, 10, 30);
     }
 
     gameLoop() {
@@ -261,17 +240,19 @@ class MazeGame {
 
     // 添加迷宫生成方法
     generateMaze() {
-        // 增加初始迷宫大小，保持竖向布局
-        const baseWidth = 11;
-        const baseHeight = 15;
-        const width = Math.min(baseWidth + Math.floor(this.level / 2), 15);
-        const height = Math.min(baseHeight + Math.floor(this.level / 2), 20);
+        // 增加初始迷宫大小
+        const baseWidth = 11; // 基础宽度增加
+        const baseHeight = 15; // 基础高度增加
+        const width = Math.min(baseWidth + Math.floor(this.level / 2), 25);
+        const height = Math.min(baseHeight + Math.floor(this.level / 2), 35);
         
         this.maze = Array(height).fill().map(() => Array(width).fill(1));
+        
+        // 使用改进的迷宫生成算法
         this.carvePassages(1, 1);
         
         // 设置起点和终点
-        this.maze[1][1] = 0;
+        this.maze[1][1] = 0; // 起点不再特殊标记
         
         // 确保终点可达
         let endY = height - 2;
@@ -288,10 +269,13 @@ class MazeGame {
             endY--;
             endX--;
         }
-        this.maze[endY][endX] = 3;
+        this.maze[endY][endX] = 3; // 终点标记
         
         // 调整画布大小
-        this.resizeCanvas();
+        this.canvas.width = width * this.cellSize;
+        this.canvas.height = height * this.cellSize;
+        
+        this.resetBall();
     }
 
     carvePassages(y, x) {
@@ -317,7 +301,6 @@ class MazeGame {
 
     levelComplete() {
         this.level++;
-        this.levelDisplay.textContent = `Level: ${this.level}`;
         localStorage.setItem('mazeLevel', this.level);
         
         if (this.level > this.highScore) {
@@ -325,7 +308,7 @@ class MazeGame {
             localStorage.setItem('mazeHighScore', this.highScore);
         }
         
-        alert('Level Complete!');
+        alert(this.translations[this.language].levelComplete);
         this.generateMaze();
     }
 }
