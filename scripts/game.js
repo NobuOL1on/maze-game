@@ -129,14 +129,12 @@ class MazeGame {
     }
 
     update() {
+        // 更新速度
         this.ball.velocity.x += this.ball.acceleration.x;
         this.ball.velocity.y += this.ball.acceleration.y;
         
-        // 更新小球位置
-        this.ball.x += this.ball.velocity.x;
-        this.ball.y += this.ball.velocity.y;
-
-        // 添加与迷宫墙壁的碰撞检测
+        // 检测是否与墙壁接触
+        let touchingWall = false;
         const cellX = Math.floor(this.ball.x / this.cellSize);
         const cellY = Math.floor(this.ball.y / this.cellSize);
 
@@ -153,7 +151,6 @@ class MazeGame {
                     const wallX = checkX * this.cellSize;
                     const wallY = checkY * this.cellSize;
                     
-                    // 简单的矩形-圆形碰撞检测
                     const closestX = Math.max(wallX, Math.min(this.ball.x, wallX + this.cellSize));
                     const closestY = Math.max(wallY, Math.min(this.ball.y, wallY + this.cellSize));
                     
@@ -162,6 +159,8 @@ class MazeGame {
                     const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
                     
                     if (distance < this.ball.radius) {
+                        touchingWall = true;
+                        
                         // 碰撞响应
                         const overlap = this.ball.radius - distance;
                         const angle = Math.atan2(distanceY, distanceX);
@@ -170,13 +169,24 @@ class MazeGame {
                         this.ball.x += Math.cos(angle) * overlap;
                         this.ball.y += Math.sin(angle) * overlap;
                         
-                        // 仅改变方向，不改变速度大小
+                        // 碰撞反弹
                         this.ball.velocity.x *= -1;
                         this.ball.velocity.y *= -1;
                     }
                 }
             }
         }
+
+        // 如果接触墙壁，应用滑动摩擦力
+        if (touchingWall) {
+            const wallFriction = 0.9; // 滑动摩擦系数，保持90%的速度
+            this.ball.velocity.x *= wallFriction;
+            this.ball.velocity.y *= wallFriction;
+        }
+        
+        // 更新位置
+        this.ball.x += this.ball.velocity.x;
+        this.ball.y += this.ball.velocity.y;
 
         // 检查是否到达终点
         if (this.maze[cellY][cellX] === 3) {

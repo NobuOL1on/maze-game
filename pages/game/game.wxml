@@ -1,0 +1,8 @@
+<view class="game-container">
+  <canvas type="2d" id="gameCanvas" class="game-canvas"></canvas>
+  
+  <view class="controls">
+    <button bindtap="startGame" wx:if="{{!isPlaying}}">开始游戏</button>
+    <button bindtap="stopGame" wx:if="{{isPlaying}}">暂停游戏</button>
+  </view>
+</view>
