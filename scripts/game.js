@@ -94,7 +94,7 @@ class MazeGame {
             if (!this.isPlaying) return;
             
             // 将设备方向数据转换为加速度
-            const sensitivity = 0.05;
+            const sensitivity = 0.1;  // 增加灵敏度，让小球移动更快
             this.ball.acceleration.x = event.gamma * sensitivity;
             this.ball.acceleration.y = event.beta * sensitivity;
         });
@@ -169,9 +169,9 @@ class MazeGame {
                         this.ball.x += Math.cos(angle) * overlap;
                         this.ball.y += Math.sin(angle) * overlap;
                         
-                        // 反弹
-                        this.ball.velocity.x *= -0.9;
-                        this.ball.velocity.y *= -0.9;
+                        // 恢复原来的反弹系数
+                        this.ball.velocity.x *= -0.5;
+                        this.ball.velocity.y *= -0.5;
                     }
                 }
             }
