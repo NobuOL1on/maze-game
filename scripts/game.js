@@ -169,9 +169,17 @@ class MazeGame {
                         this.ball.x += Math.cos(angle) * overlap;
                         this.ball.y += Math.sin(angle) * overlap;
                         
-                        // 碰撞反弹
-                        this.ball.velocity.x *= -0.1;
-                        this.ball.velocity.y *= -0.1;
+                        // 计算反弹速度
+                        const normal = { x: Math.cos(angle), y: Math.sin(angle) };
+                        const velocityDotNormal = this.ball.velocity.x * normal.x + this.ball.velocity.y * normal.y;
+                        
+                        // 反弹速度调整
+                        this.ball.velocity.x -= 2 * velocityDotNormal * normal.x;
+                        this.ball.velocity.y -= 2 * velocityDotNormal * normal.y;
+                        
+                        // 减少反弹后的速度以模拟摩擦
+                        this.ball.velocity.x *= 0.9; // 模拟摩擦
+                        this.ball.velocity.y *= 0.9; // 模拟摩擦
                     }
                 }
             }
