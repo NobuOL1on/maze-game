@@ -170,20 +170,13 @@ class MazeGame {
                         this.ball.y += Math.sin(angle) * overlap;
                         
                         // 碰撞反弹
-                        this.ball.velocity.x *= -0.7;
-                        this.ball.velocity.y *= -0.7;
+                        this.ball.velocity.x *= -0.1;
+                        this.ball.velocity.y *= -0.1;
                     }
                 }
             }
         }
 
-        // 如果接触墙壁，应用滑动摩擦力
-        if (touchingWall) {
-            const wallFriction = 1; // 滑动摩擦系数，保持90%的速度
-            this.ball.velocity.x *= wallFriction;
-            this.ball.velocity.y *= wallFriction;
-        }
-        
         // 更新位置
         this.ball.x += this.ball.velocity.x;
         this.ball.y += this.ball.velocity.y;
