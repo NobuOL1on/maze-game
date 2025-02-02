@@ -170,8 +170,8 @@ class MazeGame {
                         this.ball.y += Math.sin(angle) * overlap;
                         
                         // 碰撞反弹
-                        this.ball.velocity.x *= -0.3;
-                        this.ball.velocity.y *= -0.3;
+                        this.ball.velocity.x *= -0.7;
+                        this.ball.velocity.y *= -0.7;
                     }
                 }
             }
@@ -179,7 +179,7 @@ class MazeGame {
 
         // 如果接触墙壁，应用滑动摩擦力
         if (touchingWall) {
-            const wallFriction = 0.9; // 滑动摩擦系数，保持90%的速度
+            const wallFriction = 1; // 滑动摩擦系数，保持90%的速度
             this.ball.velocity.x *= wallFriction;
             this.ball.velocity.y *= wallFriction;
         }
