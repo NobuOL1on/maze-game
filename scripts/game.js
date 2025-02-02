@@ -291,25 +291,11 @@ class MazeGame {
         // 使用改进的迷宫生成算法
         this.carvePassages(1, 1);
         
-        // 设置起点和终点
+        // 设置起点
         this.maze[1][1] = 0; // 起点不再特殊标记
         
-        // 确保终点可达
-        let endY = height - 2;
-        let endX = width - 2;
-        while (this.maze[endY][endX] === 1) {
-            if (this.maze[endY-1][endX] === 0) {
-                this.maze[endY][endX] = 0;
-                break;
-            }
-            if (this.maze[endY][endX-1] === 0) {
-                this.maze[endY][endX] = 0;
-                break;
-            }
-            endY--;
-            endX--;
-        }
-        this.maze[endY][endX] = 3; // 终点标记
+        // 随机选择出口位置
+        this.placeExit(width, height);
         
         // 确定是否为特殊关卡
         if (this.level % 3 === 0) {
@@ -344,6 +330,27 @@ class MazeGame {
                 this.carvePassages(newY, newX);
             }
         }
+
+        // 增加岔路和死胡同
+        if (Math.random() < 0.3) { // 30% 概率增加岔路
+            const randomDirection = directions[Math.floor(Math.random() * directions.length)];
+            const randomY = y + randomDirection[0];
+            const randomX = x + randomDirection[1];
+            if (randomY > 0 && randomY < this.maze.length - 1 && 
+                randomX > 0 && randomX < this.maze[0].length - 1) {
+                this.maze[randomY][randomX] = 0;
+            }
+        }
+    }
+
+    placeExit(width, height) {
+        let endY, endX;
+        do {
+            endY = Math.floor(Math.random() * (height - 2)) + 1;
+            endX = Math.floor(Math.random() * (width - 2)) + 1;
+        } while (this.maze[endY][endX] !== 0 || (endY < 3 && endX < 3)); // 确保出口不在起始点附近且在可达区域
+
+        this.maze[endY][endX] = 3; // 终点标记
     }
 
     levelComplete() {
