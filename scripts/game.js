@@ -104,8 +104,23 @@ class MazeGame {
     }
 
     resizeCanvas() {
-        this.canvas.width = Math.min(window.innerWidth - 20, 400);
-        this.canvas.height = Math.min(window.innerHeight * 0.7, 600);
+        // 修改为竖向布局的尺寸计算
+        const maxWidth = Math.min(window.innerWidth - 20, 400);
+        const maxHeight = Math.min(window.innerHeight * 0.7, 600);
+        
+        // 确保画布始终保持竖向布局
+        this.canvas.width = maxWidth;
+        this.canvas.height = maxHeight;
+        
+        // 根据画布大小调整单元格尺寸
+        const mazeWidth = this.maze ? this.maze[0].length : 11;
+        const mazeHeight = this.maze ? this.maze.length : 15;
+        
+        this.cellSize = Math.min(
+            Math.floor(maxWidth / mazeWidth),
+            Math.floor(maxHeight / mazeHeight)
+        );
+        
         this.resetBall();
     }
 
@@ -246,19 +261,17 @@ class MazeGame {
 
     // 添加迷宫生成方法
     generateMaze() {
-        // 增加初始迷宫大小
-        const baseWidth = 11; // 基础宽度增加
-        const baseHeight = 15; // 基础高度增加
-        const width = Math.min(baseWidth + Math.floor(this.level / 2), 25);
-        const height = Math.min(baseHeight + Math.floor(this.level / 2), 35);
+        // 增加初始迷宫大小，保持竖向布局
+        const baseWidth = 11;
+        const baseHeight = 15;
+        const width = Math.min(baseWidth + Math.floor(this.level / 2), 15);
+        const height = Math.min(baseHeight + Math.floor(this.level / 2), 20);
         
         this.maze = Array(height).fill().map(() => Array(width).fill(1));
-        
-        // 使用改进的迷宫生成算法
         this.carvePassages(1, 1);
         
         // 设置起点和终点
-        this.maze[1][1] = 0; // 起点不再特殊标记
+        this.maze[1][1] = 0;
         
         // 确保终点可达
         let endY = height - 2;
@@ -275,13 +288,10 @@ class MazeGame {
             endY--;
             endX--;
         }
-        this.maze[endY][endX] = 3; // 终点标记
+        this.maze[endY][endX] = 3;
         
         // 调整画布大小
-        this.canvas.width = width * this.cellSize;
-        this.canvas.height = height * this.cellSize;
-        
-        this.resetBall();
+        this.resizeCanvas();
     }
 
     carvePassages(y, x) {
@@ -323,5 +333,4 @@ class MazeGame {
 // 当页面加载完成后初始化游戏
 window.addEventListener('load', () => {
     new MazeGame();
-}); 
 }); 
