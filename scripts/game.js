@@ -47,7 +47,7 @@ class MazeGame {
         };
 
         // 定义特殊关卡类型
-        this.specialLevels = ['fog', 'antiGravity'];
+        this.specialLevels = ['fog', 'antiGravity', 'lightning'];
         this.currentSpecialLevel = null;
         this.lightningTimer = 0; // 用于控制闪电的计时器
         this.lightningDuration = 1000; // 闪电持续时间（毫秒）
@@ -72,8 +72,14 @@ class MazeGame {
 
         // 绑定事件处理
         this.startButton.addEventListener('click', () => this.startGame());
-        this.pauseButton.addEventListener('click', () => this.resetBall());
-        this.pauseButton.textContent = this.translations[this.language].reset;
+        this.pauseButton.style.display = 'none'; // 隐藏重置按钮
+
+        // 创建分享按钮
+        this.shareButton = document.createElement('button');
+        this.shareButton.textContent = 'Share';
+        document.body.appendChild(this.shareButton);
+        this.shareButton.addEventListener('click', () => this.shareGame());
+
         this.permitButton.addEventListener('click', () => this.requestPermission());
 
         // 检查设备方向感应API是否可用
@@ -422,6 +428,24 @@ class MazeGame {
 
     getRandomLightningInterval() {
         return 2000 + Math.random() * 2000; // 平均3秒，范围2-4秒
+    }
+
+    shareGame() {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url).then(() => {
+            alert('Game URL copied to clipboard!');
+        }).catch(err => {
+            console.error('Failed to copy URL: ', err);
+        });
+
+        // 生成二维码
+        const qrcodeContainer = document.getElementById('qrcode');
+        qrcodeContainer.innerHTML = ''; // 清空之前的二维码
+        new QRCode(qrcodeContainer, {
+            text: url,
+            width: 128,
+            height: 128
+        });
     }
 }
 
