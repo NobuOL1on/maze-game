@@ -54,6 +54,7 @@ class MazeGame {
         this.startTime = null; // 记录关卡开始时间
         this.totalTime = 0; // 总通关时间
         this.completedLevels = 0; // 已完成的关卡数
+        this.levelTimes = []; // 记录每个关卡的通关时间
 
         this.init();
     }
@@ -227,7 +228,7 @@ class MazeGame {
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
             this.ctx.save();
             this.ctx.beginPath();
-            this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 5, 0, Math.PI * 2);
+            this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 10, 0, Math.PI * 2); // 视野改为两倍
             this.ctx.clip();
         }
 
@@ -276,7 +277,7 @@ class MazeGame {
         this.ctx.fillText(levelText, 10, 30);
 
         // 在页面正上方绘制平均通关时间
-        const averageTime = this.completedLevels > 0 ? this.totalTime / this.completedLevels : 0;
+        const averageTime = this.levelTimes.length > 0 ? Math.floor(this.levelTimes.reduce((a, b) => a + b, 0) / this.levelTimes.length) : 0;
         const averageTimeText = `AVG TIME: ${this.formatTime(averageTime)}`;
         this.ctx.fillText(averageTimeText, this.canvas.width / 2 - 100, 30); // 调整位置到正上方
     }
@@ -302,8 +303,14 @@ class MazeGame {
         // 使用改进的迷宫生成算法
         this.carvePassages(1, 1);
         
-        // 设置起点
-        this.maze[1][1] = 0; // 起点不再特殊标记
+        // 设置起点为前一关的终点
+        if (this.level > 1) {
+            this.maze[this.endY][this.endX] = 0; // 清除前一关的终点标记
+            this.ball.x = (this.endX + 0.5) * this.cellSize;
+            this.ball.y = (this.endY + 0.5) * this.cellSize;
+        } else {
+            this.resetBall(); // 第一关重置小球位置
+        }
         
         // 随机选择出口位置
         this.placeExit(width, height);
@@ -318,8 +325,6 @@ class MazeGame {
         // 调整画布大小
         this.canvas.width = width * this.cellSize;
         this.canvas.height = height * this.cellSize;
-        
-        this.resetBall();
     }
 
     carvePassages(y, x) {
@@ -355,20 +360,19 @@ class MazeGame {
     }
 
     placeExit(width, height) {
-        let endY, endX;
         do {
-            endY = Math.floor(Math.random() * (height - 2)) + 1;
-            endX = Math.floor(Math.random() * (width - 2)) + 1;
-        } while (this.maze[endY][endX] !== 0 || (endY < 3 && endX < 3)); // 确保出口不在起始点附近且在可达区域
+            this.endY = Math.floor(Math.random() * (height - 2)) + 1;
+            this.endX = Math.floor(Math.random() * (width - 2)) + 1;
+        } while (this.maze[this.endY][this.endX] !== 0 || (this.endY < 3 && this.endX < 3)); // 确保出口不在起始点附近且在可达区域
 
-        this.maze[endY][endX] = 3; // 终点标记
+        this.maze[this.endY][this.endX] = 3; // 终点标记
     }
 
     levelComplete() {
         const timeTaken = (Date.now() - this.startTime) / 1000; // 计算用时（秒）
-        this.totalTime += timeTaken;
-        this.completedLevels++;
-        const averageTime = this.totalTime / this.completedLevels; // 计算平均通关时间
+        this.levelTimes.push(timeTaken); // 记录每个关卡的通关时间
+
+        const averageTime = Math.floor(this.levelTimes.reduce((a, b) => a + b, 0) / this.levelTimes.length); // 计算平均通关时间
 
         if (this.currentSpecialLevel === 'antiGravity' && timeTaken < 2 * averageTime) {
             const reduction = averageTime * 0.1; // 减少平均通关时间的 10%
