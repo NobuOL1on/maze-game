@@ -323,12 +323,6 @@ class MazeGame {
         this.ctx.fillStyle = '#000';
         this.ctx.fill();
         this.ctx.closePath();
-
-        // 在页面左上角绘制关卡信息
-        this.ctx.fillStyle = '#fff'; // 改为白色
-        this.ctx.font = 'bold 24px Arial';
-        const levelText = `LEVEL ${this.level}`;
-        this.ctx.fillText(levelText, 10, 30);
     }
 
     gameLoop() {
