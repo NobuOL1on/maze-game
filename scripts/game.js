@@ -491,10 +491,21 @@ class MazeGame {
         this.level = 1;
         this.highScore = parseInt(localStorage.getItem('mazeHighScore')) || 0;
         this.maze = [];
+        this.cellSize = 30;  // 添加单元格尺寸
         this.levelTimes = [];
         this.totalTime = 0;
         this.completedLevels = 0;
         this.currentSpecialLevel = null;
+        this.endX = 0;  // 添加终点坐标
+        this.endY = 0;
+        // 重置小球状态
+        this.ball = {
+            x: 0,
+            y: 0,
+            radius: 10,
+            velocity: { x: 0, y: 0 },
+            acceleration: { x: 0, y: 0 }
+        };
     }
 }
 
