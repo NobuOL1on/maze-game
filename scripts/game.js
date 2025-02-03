@@ -2,7 +2,8 @@ class MazeGame {
     constructor() {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
-        this.startButton = document.getElementById('startButton');
+        this.startPage = document.getElementById('startPage');
+        this.startGameButton = document.getElementById('startGameButton');
         this.pauseButton = document.getElementById('pauseButton');
         this.permissionPrompt = document.getElementById('permission-prompt');
         this.permitButton = document.getElementById('permitButton');
@@ -63,24 +64,8 @@ class MazeGame {
     }
 
     init() {
-        // 设置画布尺寸
-        this.resizeCanvas();
-        window.addEventListener('resize', () => this.resizeCanvas());
-
-        // 初始化小球位置
-        this.resetBall();
-
-        // 绑定事件处理
-        this.startButton.addEventListener('click', () => this.startGame());
-        this.pauseButton.style.display = 'none'; // 隐藏重置按钮
-
-        // 创建分享按钮
-        this.shareButton = document.createElement('button');
-        this.shareButton.textContent = 'Share';
-        document.body.appendChild(this.shareButton);
-        this.shareButton.addEventListener('click', () => this.shareGame());
-
-        this.permitButton.addEventListener('click', () => this.requestPermission());
+        // 绑定开始按钮事件
+        this.startGameButton.addEventListener('click', () => this.startGame());
 
         // 检查设备方向感应API是否可用
         if (window.DeviceOrientationEvent) {
@@ -124,8 +109,11 @@ class MazeGame {
 
     startGame() {
         this.isPlaying = true;
-        this.startButton.style.display = 'none';
-        this.pauseButton.style.display = 'block';
+        this.startPage.style.display = 'none'; // 隐藏开始页面
+        this.canvas.style.display = 'block'; // 显示游戏画布
+        this.resizeCanvas();
+        window.addEventListener('resize', () => this.resizeCanvas());
+        this.resetBall();
         this.generateMaze(); // 生成新迷宫
         this.startTime = Date.now(); // 记录关卡开始时间
         this.gameLoop();
@@ -133,7 +121,7 @@ class MazeGame {
 
     pauseGame() {
         this.isPlaying = false;
-        this.startButton.style.display = 'block';
+        this.startGameButton.style.display = 'block';
         this.pauseButton.style.display = 'none';
     }
 
@@ -428,24 +416,6 @@ class MazeGame {
 
     getRandomLightningInterval() {
         return 2000 + Math.random() * 2000; // 平均3秒，范围2-4秒
-    }
-
-    shareGame() {
-        const url = window.location.href;
-        navigator.clipboard.writeText(url).then(() => {
-            alert('Game URL copied to clipboard!');
-        }).catch(err => {
-            console.error('Failed to copy URL: ', err);
-        });
-
-        // 生成二维码
-        const qrcodeContainer = document.getElementById('qrcode');
-        qrcodeContainer.innerHTML = ''; // 清空之前的二维码
-        new QRCode(qrcodeContainer, {
-            text: url,
-            width: 128,
-            height: 128
-        });
     }
 }
 
