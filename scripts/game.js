@@ -285,6 +285,12 @@ class MazeGame {
         // 绘制小球
         this.ctx.beginPath();
         this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius, 0, Math.PI * 2);
+        // 如果是闪电关卡，添加白色轮廓
+        if (this.currentSpecialLevel === 'lightning') {
+            this.ctx.strokeStyle = '#fff';
+            this.ctx.lineWidth = 2;
+            this.ctx.stroke();
+        }
         this.ctx.fillStyle = '#000';
         this.ctx.fill();
         this.ctx.closePath();
