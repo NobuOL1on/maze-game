@@ -66,4 +66,20 @@ button:active {
 
 #permission-prompt p {
     margin-bottom: 15px;
+}
+
+#startPage {
+    height: 80vh;
+    max-height: 600px;
+    padding: 20px;
+}
+
+#startPage h1 {
+    font-size: 2.5em;
+    margin-bottom: 20px;
+}
+
+#startGameButton {
+    font-size: 1.2em;
+    padding: 15px 30px;
 } 

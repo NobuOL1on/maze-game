@@ -110,14 +110,15 @@ class MazeGame {
 
     startGame() {
         this.isPlaying = true;
-        this.startPage.style.display = 'none'; // 隐藏开始页面
-        document.getElementById('game-container').style.display = 'flex'; // 显示游戏容器
-        this.canvas.style.display = 'block'; // 显示游戏画布
+        this.startPage.style.display = 'none';
+        document.getElementById('game-container').style.display = 'flex';
+        this.canvas.style.display = 'block';
+        document.getElementById('startButton').style.display = 'none';
         this.resizeCanvas();
         window.addEventListener('resize', () => this.resizeCanvas());
         this.resetBall();
-        this.generateMaze(); // 生成新迷宫
-        this.startTime = Date.now(); // 记录关卡开始时间
+        this.generateMaze();
+        this.startTime = Date.now();
         this.gameLoop();
     }
 
