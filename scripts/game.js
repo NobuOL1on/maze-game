@@ -418,19 +418,16 @@ class MazeGame {
     }
 
     levelComplete() {
-        const timeTaken = (Date.now() - this.startTime) / 1000; // 计算用时（秒）
-        this.levelTimes.push(timeTaken); // 记录每个关卡的通关时间
-
-        const averageTime = Math.floor(this.levelTimes.reduce((a, b) => a + b, 0) / this.levelTimes.length); // 计算平均通关时间
+        const timeTaken = (Date.now() - this.startTime) / 1000;
+        this.levelTimes.push(timeTaken);
+        const averageTime = Math.floor(this.levelTimes.reduce((a, b) => a + b, 0) / this.levelTimes.length);
 
         if (this.currentSpecialLevel === 'antiGravity' && timeTaken < 2 * averageTime) {
-            const reduction = averageTime * 0.1; // 减少平均通关时间的 10%
-            this.totalTime -= reduction * this.completedLevels; // 减少总通关时间
-            alert(`Bonus for fast completion in Anti-Gravity Level! Average time reduced by 10%`);
+            const reduction = averageTime * 0.1;
+            this.totalTime -= reduction * this.completedLevels;
         } else if (this.currentSpecialLevel === 'fog' && timeTaken < 5 * averageTime) {
-            const reduction = averageTime * 0.1; // 减少平均通关时间的 10%
-            this.totalTime -= reduction * this.completedLevels; // 减少总通关时间
-            alert(`Bonus for fast completion in Fog Level! Average time reduced by 10%`);
+            const reduction = averageTime * 0.1;
+            this.totalTime -= reduction * this.completedLevels;
         }
 
         this.level++;
@@ -441,8 +438,32 @@ class MazeGame {
             localStorage.setItem('mazeHighScore', this.highScore);
         }
         
-        alert(`${this.translations[this.language].levelComplete}`);
-        this.generateMaze();
+        // 显示过渡动画
+        this.showLevelTransition();
+    }
+
+    showLevelTransition() {
+        // 保存当前画布状态
+        this.ctx.save();
+        
+        // 绘制黑色背景
+        this.ctx.fillStyle = '#000';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // 绘制白色圆形
+        this.ctx.beginPath();
+        this.ctx.fillStyle = '#fff';
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        const radius = Math.min(this.canvas.width, this.canvas.height) * 0.2; // 圆形大小为画布较小边的20%
+        this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // 恢复画布状态
+        setTimeout(() => {
+            this.ctx.restore();
+            this.generateMaze(); // 生成新迷宫
+        }, 100); // 0.1秒后恢复
     }
 
     formatTime(seconds) {
