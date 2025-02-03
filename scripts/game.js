@@ -270,15 +270,15 @@ class MazeGame {
         this.ctx.closePath();
 
         // 在页面左上角绘制关卡信息
-        this.ctx.fillStyle = '#000';
+        this.ctx.fillStyle = '#fff'; // 改为白色
         this.ctx.font = 'bold 24px Arial';
         const levelText = `LEVEL ${this.level}`;
         this.ctx.fillText(levelText, 10, 30);
 
-        // 在页面右上角绘制平均通关时间
-        const averageTime = this.completedLevels > 0 ? (this.totalTime / this.completedLevels).toFixed(2) : 'N/A';
-        const averageTimeText = `AVG TIME: ${averageTime}s`;
-        this.ctx.fillText(averageTimeText, this.canvas.width - 150, 30); // 调整位置到右上角
+        // 在页面正上方绘制平均通关时间
+        const averageTime = this.completedLevels > 0 ? this.totalTime / this.completedLevels : 0;
+        const averageTimeText = `AVG TIME: ${this.formatTime(averageTime)}`;
+        this.ctx.fillText(averageTimeText, this.canvas.width / 2 - 100, 30); // 调整位置到正上方
     }
 
     gameLoop() {
@@ -370,18 +370,11 @@ class MazeGame {
         this.completedLevels++;
         const averageTime = this.totalTime / this.completedLevels; // 计算平均通关时间
 
-        const levelBonus = this.level * 10; // 基础分数，关卡编号乘以10
-        let specialBonus = 0;
-
         if (this.currentSpecialLevel === 'antiGravity' && timeTaken < 2 * averageTime) {
-            specialBonus = averageTime * 0.1; // 反重力关卡奖励
-            alert(`Bonus for fast completion in Anti-Gravity Level: ${specialBonus.toFixed(2)}`);
+            alert(`Bonus for fast completion in Anti-Gravity Level!`);
         } else if (this.currentSpecialLevel === 'fog' && timeTaken < 5 * averageTime) {
-            specialBonus = averageTime * 0.1; // 迷雾关卡奖励
-            alert(`Bonus for fast completion in Fog Level: ${specialBonus.toFixed(2)}`);
+            alert(`Bonus for fast completion in Fog Level!`);
         }
-
-        this.score += levelBonus + specialBonus; // 更新总分数
 
         this.level++;
         localStorage.setItem('mazeLevel', this.level);
@@ -391,8 +384,16 @@ class MazeGame {
             localStorage.setItem('mazeHighScore', this.highScore);
         }
         
-        alert(`${this.translations[this.language].levelComplete}\nScore: ${this.score}`);
+        alert(`${this.translations[this.language].levelComplete}`);
         this.generateMaze();
+    }
+
+    formatTime(seconds) {
+        const ms = Math.floor((seconds % 1) * 1000);
+        const s = Math.floor(seconds) % 60;
+        const m = Math.floor(seconds / 60) % 60;
+        const h = Math.floor(seconds / 3600);
+        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}:${ms.toString().padStart(3, '0')}`;
     }
 }
 
