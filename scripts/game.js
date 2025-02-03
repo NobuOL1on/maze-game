@@ -323,6 +323,12 @@ class MazeGame {
         this.ctx.fillStyle = '#000';
         this.ctx.fill();
         this.ctx.closePath();
+
+        // 在页面左上角绘制关卡信息
+        this.ctx.fillStyle = '#fff'; // 改为白色
+        this.ctx.font = 'bold 24px Arial';
+        const levelText = `LEVEL ${this.level}`;
+        this.ctx.fillText(levelText, 10, 30);
     }
 
     gameLoop() {
@@ -414,6 +420,7 @@ class MazeGame {
     levelComplete() {
         const timeTaken = (Date.now() - this.startTime) / 1000;
         this.levelTimes.push(timeTaken);
+
         const averageTime = Math.floor(this.levelTimes.reduce((a, b) => a + b, 0) / this.levelTimes.length);
 
         if (this.currentSpecialLevel === 'antiGravity' && timeTaken < 2 * averageTime) {
@@ -432,32 +439,7 @@ class MazeGame {
             localStorage.setItem('mazeHighScore', this.highScore);
         }
         
-        // 显示过渡动画
-        this.showLevelTransition();
-    }
-
-    showLevelTransition() {
-        // 保存当前画布状态
-        this.ctx.save();
-        
-        // 绘制黑色背景
-        this.ctx.fillStyle = '#000';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        // 绘制白色圆形
-        this.ctx.beginPath();
-        this.ctx.fillStyle = '#fff';
-        const centerX = this.canvas.width / 2;
-        const centerY = this.canvas.height / 2;
-        const radius = Math.min(this.canvas.width, this.canvas.height) * 0.2; // 圆形大小为画布较小边的20%
-        this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-        this.ctx.fill();
-        
-        // 恢复画布状态
-        setTimeout(() => {
-            this.ctx.restore();
-            this.generateMaze(); // 生成新迷宫
-        }, 100); // 0.1秒后恢复
+        this.generateMaze();
     }
 
     formatTime(seconds) {
