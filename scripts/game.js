@@ -30,6 +30,9 @@ class MazeGame {
         this.permissionPrompt = document.getElementById('permission-prompt');
         this.permitButton = document.getElementById('permitButton');
         
+        // 清除可能存在的无效数据
+        this.clearInvalidData();
+        
         // 游戏状态
         this.isPlaying = false;
         this.ball = {
@@ -40,11 +43,8 @@ class MazeGame {
             acceleration: { x: 0, y: 0 }
         };
 
-        // 添加新的游戏状态
-        this.level = parseInt(localStorage.getItem('mazeLevel')) || 1;
-        this.highScore = parseInt(localStorage.getItem('mazeHighScore')) || 0;
-        this.maze = [];
-        this.cellSize = 30; // 减小单元格尺寸以适应更大的迷宫
+        // 重置游戏状态
+        this.resetGameState();
 
         // 添加语言支持
         this.language = localStorage.getItem('mazeGameLanguage') || 'en';
@@ -143,6 +143,8 @@ class MazeGame {
         document.getElementById('game-container').style.display = 'flex';
         this.canvas.style.display = 'block';
         document.getElementById('startButton').style.display = 'none';
+        // 每次开始游戏时重置游戏状态
+        this.resetGameState();
         this.resizeCanvas();
         window.addEventListener('resize', () => this.resizeCanvas());
         this.resetBall();
@@ -469,6 +471,30 @@ class MazeGame {
             <p>Please open this game in your system browser</p>
         `;
         document.body.appendChild(warning);
+    }
+
+    clearInvalidData() {
+        // 如果存储的数据无效，清除所有游戏相关的本地存储
+        try {
+            const level = parseInt(localStorage.getItem('mazeLevel'));
+            if (isNaN(level) || level < 1) {
+                localStorage.removeItem('mazeLevel');
+                localStorage.removeItem('mazeHighScore');
+            }
+        } catch (e) {
+            localStorage.clear();
+        }
+    }
+
+    resetGameState() {
+        // 重置所有游戏状态
+        this.level = 1;
+        this.highScore = parseInt(localStorage.getItem('mazeHighScore')) || 0;
+        this.maze = [];
+        this.levelTimes = [];
+        this.totalTime = 0;
+        this.completedLevels = 0;
+        this.currentSpecialLevel = null;
     }
 }
 
