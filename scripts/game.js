@@ -371,9 +371,13 @@ class MazeGame {
         const averageTime = this.totalTime / this.completedLevels; // 计算平均通关时间
 
         if (this.currentSpecialLevel === 'antiGravity' && timeTaken < 2 * averageTime) {
-            alert(`Bonus for fast completion in Anti-Gravity Level!`);
+            const reduction = averageTime * 0.1; // 减少平均通关时间的 10%
+            this.totalTime -= reduction * this.completedLevels; // 减少总通关时间
+            alert(`Bonus for fast completion in Anti-Gravity Level! Average time reduced by 10%`);
         } else if (this.currentSpecialLevel === 'fog' && timeTaken < 5 * averageTime) {
-            alert(`Bonus for fast completion in Fog Level!`);
+            const reduction = averageTime * 0.1; // 减少平均通关时间的 10%
+            this.totalTime -= reduction * this.completedLevels; // 减少总通关时间
+            alert(`Bonus for fast completion in Fog Level! Average time reduced by 10%`);
         }
 
         this.level++;

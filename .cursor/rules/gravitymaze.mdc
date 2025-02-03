@@ -1,9 +1,75 @@
 ---
-description:
-globs:
+description: 
+globs: 
 ---
 
 # Your rule content
 
 - You can @ files here
 - You can use markdown but dont have to
+# .cursorrules
+
+# .cursorrules
+
+# .cursorrules
+
+rules:
+  - id: no-console-log
+    message: "避免在生产代码中使用 console.log。"
+    severity: warning
+    pattern: console\.log\(.*\);
+    # 避免使用 console.log，因为它可能会在生产环境中泄露信息。
+
+  - id: use-strict-equality
+    message: "使用严格相等 '===' 而不是 '=='."
+    severity: error
+    pattern: \bif\s*\(.*==.*\)
+    # 确保使用严格相等来避免类型转换带来的潜在问题。
+
+  - id: no-unused-vars
+    message: "移除未使用的变量。"
+    severity: warning
+    pattern: \bvar\s+\w+\s*=\s*.*;
+    # 清理未使用的变量以保持代码整洁。
+
+  - id: consistent-indentation
+    message: "使用两个空格进行缩进。"
+    severity: warning
+    pattern: ^( {2})*\S
+    # 保持代码缩进的一致性，推荐使用两个空格。
+
+  - id: max-line-length
+    message: "行长度不应超过80个字符。"
+    severity: warning
+    pattern: ^.{81,}
+    # 确保代码行不超过80个字符，以提高可读性。
+
+  - id: no-magic-numbers
+    message: "避免使用魔法数字。将它们定义为常量。"
+    severity: warning
+    pattern: \b\d+\b
+    # 使用常量代替直接的数字，以提高代码的可维护性。
+
+  - id: function-naming
+    message: "函数名应使用驼峰命名法。"
+    severity: warning
+    pattern: function\s+[A-Z]
+    # 确保函数名使用驼峰命名法以保持一致性。
+
+  - id: comment-todos
+    message: "为 TODO 注释添加描述。"
+    severity: info
+    pattern: //\s*TODO\s*:
+    # 在 TODO 注释中添加描述，以便于后续跟踪和实现。
+
+  - id: no-debugger
+    message: "移除 debugger 语句。"
+    severity: error
+    pattern: debugger;
+    # 确保生产代码中没有 debugger 语句，以避免中断执行。
+
+  - id: consistent-return
+    message: "确保函数中返回语句的一致性。"
+    severity: warning
+    pattern: return\s+[^;]*;
+    # 确保函数返回值的一致性，以避免意外行为。
