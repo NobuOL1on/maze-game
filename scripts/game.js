@@ -66,6 +66,7 @@ class MazeGame {
     init() {
         // 绑定开始按钮事件
         this.startGameButton.addEventListener('click', () => this.startGame());
+        this.permitButton.addEventListener('click', () => this.requestPermission());
 
         // 检查设备方向感应API是否可用
         if (window.DeviceOrientationEvent) {
@@ -110,6 +111,7 @@ class MazeGame {
     startGame() {
         this.isPlaying = true;
         this.startPage.style.display = 'none'; // 隐藏开始页面
+        document.getElementById('game-container').style.display = 'flex'; // 显示游戏容器
         this.canvas.style.display = 'block'; // 显示游戏画布
         this.resizeCanvas();
         window.addEventListener('resize', () => this.resizeCanvas());
@@ -134,8 +136,9 @@ class MazeGame {
     }
 
     resizeCanvas() {
-        this.canvas.width = Math.min(window.innerWidth - 20, 400);
-        this.canvas.height = Math.min(window.innerHeight * 0.7, 600);
+        const container = document.getElementById('game-container');
+        this.canvas.width = Math.min(container.clientWidth - 20, 400);
+        this.canvas.height = Math.min(container.clientHeight * 0.7, 600);
         this.resetBall();
     }
 
