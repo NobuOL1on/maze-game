@@ -49,6 +49,9 @@ class MazeGame {
         // 定义特殊关卡类型
         this.specialLevels = ['fog', 'antiGravity'];
         this.currentSpecialLevel = null;
+        this.lightningTimer = 0; // 用于控制闪电的计时器
+        this.lightningDuration = 1000; // 闪电持续时间（毫秒）
+        this.nextLightning = this.getRandomLightningInterval(); // 下次闪电的时间
 
         this.score = 0; // 初始化分数
         this.startTime = null; // 记录关卡开始时间
@@ -230,6 +233,24 @@ class MazeGame {
             this.ctx.beginPath();
             this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 10, 0, Math.PI * 2); // 视野改为两倍
             this.ctx.clip();
+        } else if (this.currentSpecialLevel === 'lightning') {
+            const currentTime = Date.now();
+            if (currentTime - this.lightningTimer > this.nextLightning) {
+                this.lightningTimer = currentTime;
+                this.nextLightning = this.getRandomLightningInterval();
+            }
+
+            if (currentTime - this.lightningTimer < this.lightningDuration) {
+                // 闪电效果，整个迷宫可见
+            } else {
+                // 黑暗效果，仅小球周围有微弱光
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                this.ctx.save();
+                this.ctx.beginPath();
+                this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 0.5, 0, Math.PI * 2); // 微弱光
+                this.ctx.clip();
+            }
         }
 
         for (let y = 0; y < this.maze.length; y++) {
@@ -259,7 +280,7 @@ class MazeGame {
             }
         }
 
-        if (this.currentSpecialLevel === 'fog') {
+        if (this.currentSpecialLevel === 'fog' || this.currentSpecialLevel === 'lightning') {
             this.ctx.restore();
         }
 
@@ -275,11 +296,6 @@ class MazeGame {
         this.ctx.font = 'bold 24px Arial';
         const levelText = `LEVEL ${this.level}`;
         this.ctx.fillText(levelText, 10, 30);
-
-        // 在页面正上方绘制平均通关时间
-        const averageTime = this.levelTimes.length > 0 ? Math.floor(this.levelTimes.reduce((a, b) => a + b, 0) / this.levelTimes.length) : 0;
-        const averageTimeText = `AVG TIME: ${this.formatTime(averageTime)}`;
-        this.ctx.fillText(averageTimeText, this.canvas.width / 2 - 100, 30); // 调整位置到正上方
     }
 
     gameLoop() {
@@ -402,6 +418,10 @@ class MazeGame {
         const m = Math.floor(seconds / 60) % 60;
         const h = Math.floor(seconds / 3600);
         return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}:${ms.toString().padStart(3, '0')}`;
+    }
+
+    getRandomLightningInterval() {
+        return 2000 + Math.random() * 2000; // 平均3秒，范围2-4秒
     }
 }
 
