@@ -1,7 +1,29 @@
 class MazeGame {
+    static isCompatibleBrowser() {
+        const ua = navigator.userAgent.toLowerCase();
+        const isWeixin = ua.indexOf('micromessenger') !== -1;
+        const isQQ = ua.indexOf('mqqbrowser') !== -1;
+        const isInApp = ua.indexOf('inapp') !== -1;
+        
+        return !(isWeixin || isQQ || isInApp);
+    }
+
     constructor() {
+        if (!MazeGame.isCompatibleBrowser()) {
+            this.showCompatibilityWarning();
+            return;
+        }
         this.canvas = document.getElementById('gameCanvas');
-        this.ctx = this.canvas.getContext('2d');
+        try {
+            this.ctx = this.canvas.getContext('2d');
+            if (!this.ctx) {
+                throw new Error('Failed to get canvas context');
+            }
+        } catch (error) {
+            console.error('Canvas initialization error:', error);
+            this.showCompatibilityWarning();
+            return;
+        }
         this.startPage = document.getElementById('startPage');
         this.startGameButton = document.getElementById('startGameButton');
         this.pauseButton = document.getElementById('pauseButton');
@@ -69,16 +91,23 @@ class MazeGame {
         this.permitButton.addEventListener('click', () => this.requestPermission());
 
         // 检查设备方向感应API是否可用
-        if (window.DeviceOrientationEvent) {
-            if (DeviceOrientationEvent.requestPermission) {
-                // iOS 13+ 需要请求权限
-                this.permissionPrompt.style.display = 'block';
+        try {
+            if (window.DeviceOrientationEvent) {
+                if (DeviceOrientationEvent.requestPermission) {
+                    // iOS 13+ 需要请求权限
+                    this.permissionPrompt.style.display = 'block';
+                } else {
+                    // 其他设备直接开始监听
+                    this.bindOrientationEvents();
+                }
             } else {
-                // 其他设备直接开始监听
-                this.bindOrientationEvents();
+                console.warn('DeviceOrientation not supported');
+                // 显示提示并提供替代控制方式
+                this.showCompatibilityWarning();
             }
-        } else {
-            alert('您的设备不支持重力感应');
+        } catch (error) {
+            console.error('DeviceOrientation initialization error:', error);
+            this.showCompatibilityWarning();
         }
     }
 
@@ -427,9 +456,36 @@ class MazeGame {
     getRandomLightningInterval() {
         return 2000 + Math.random() * 2000; // 平均3秒，范围2-4秒
     }
+
+    showCompatibilityWarning() {
+        const warning = document.createElement('div');
+        warning.style.position = 'fixed';
+        warning.style.top = '50%';
+        warning.style.left = '50%';
+        warning.style.transform = 'translate(-50%, -50%)';
+        warning.style.background = 'white';
+        warning.style.padding = '20px';
+        warning.style.borderRadius = '10px';
+        warning.style.textAlign = 'center';
+        warning.innerHTML = `
+            <p>请在系统浏览器中打开此游戏</p>
+            <p>Please open this game in your system browser</p>
+        `;
+        document.body.appendChild(warning);
+    }
 }
 
 // 当页面加载完成后初始化游戏
-window.addEventListener('load', () => {
-    new MazeGame();
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        new MazeGame();
+    } catch (error) {
+        console.error('Game initialization error:', error);
+        // 显示友好的错误提示
+        const errorDiv = document.createElement('div');
+        errorDiv.style.textAlign = 'center';
+        errorDiv.style.padding = '20px';
+        errorDiv.innerHTML = '游戏加载失败，请在系统浏览器中打开';
+        document.body.appendChild(errorDiv);
+    }
 }); 
