@@ -277,25 +277,24 @@ class MazeGame {
             this.ctx.fillStyle = '#000';
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
             
-            // 创建可见区域路径
+            // 先绘制所有面包屑位置为白色地面
+            this.breadcrumbs.forEach(crumb => {
+                const [x, y] = crumb.split(',').map(Number);
+                this.ctx.fillStyle = '#fff';
+                this.ctx.fillRect(
+                    x * this.cellSize,
+                    y * this.cellSize,
+                    this.cellSize,
+                    this.cellSize
+                );
+            });
+
+            // 创建当前位置的可见区域
             this.ctx.save();
             this.ctx.beginPath();
             
             // 添加当前小球位置的可见区域
             this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 2, 0, Math.PI * 2);
-            
-            // 添加所有面包屑位置的可见区域
-            this.breadcrumbs.forEach(crumb => {
-                const [x, y] = crumb.split(',').map(Number);
-                this.ctx.moveTo(x * this.cellSize + this.cellSize/2, y * this.cellSize + this.cellSize/2);
-                this.ctx.arc(
-                    x * this.cellSize + this.cellSize/2,
-                    y * this.cellSize + this.cellSize/2,
-                    this.ball.radius * 2,
-                    0,
-                    Math.PI * 2
-                );
-            });
             
             this.ctx.clip();
         } else if (this.currentSpecialLevel === 'lightning') {
