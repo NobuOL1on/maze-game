@@ -779,6 +779,9 @@ class MazeGame {
         this.modeSelect.style.display = 'none';
         document.getElementById('game-container').style.display = 'none';
         this.countdownContainer.style.display = 'none';
+        // 清空技能槽
+        this.skillSlots = [null, null];
+        this.updateSkillSlots();
         // 重置游戏状态
         this.resetGameState();
     }
@@ -915,6 +918,14 @@ class MazeGame {
         this.hasKey = false;
         this.keyPosition = { x: 0, y: 0 };
         this.fakeExitPosition = { x: 0, y: 0 };
+        // 重置技能相关状态
+        this.skillSlots = [null, null];
+        this.activeSkillEffects = {
+            timeStopActive: false,
+            globalLightActive: false,
+            timeStopRemaining: 0,
+            globalLightRemaining: 0
+        };
     }
 
     updateCountdown() {
@@ -1092,6 +1103,28 @@ class MazeGame {
         this.isPlaying = false;  // 暂停游戏
         
         const skillSelection = document.getElementById('skillSelection');
+        
+        // 添加关闭按钮
+        const closeButton = document.createElement('div');
+        closeButton.style.position = 'absolute';
+        closeButton.style.top = '10px';
+        closeButton.style.right = '10px';
+        closeButton.style.width = '20px';
+        closeButton.style.height = '20px';
+        closeButton.style.cursor = 'pointer';
+        closeButton.style.fontSize = '20px';
+        closeButton.style.lineHeight = '20px';
+        closeButton.style.textAlign = 'center';
+        closeButton.innerHTML = '×';
+        closeButton.onclick = () => {
+            skillSelection.style.display = 'none';
+            this.skillSelectionActive = false;
+            this.lastUpdateTime = Date.now();
+            this.isPlaying = true;
+            requestAnimationFrame(() => this.gameLoop());
+        };
+        skillSelection.appendChild(closeButton);
+        
         const options = skillSelection.getElementsByClassName('skill-option');
         const availableSkills = this.getAvailableSkills();
         
@@ -1252,11 +1285,13 @@ class MazeGame {
     equipSkill(skill) {
         if (!skill || !skill.id) return;  // 添加安全检查
         
-        // 找到一个空的技能槽或者可以替换的槽
+        // 检查是否有空槽
         let slotIndex = this.skillSlots.findIndex(slot => slot === null);
+        
+        // 如果没有空槽，显示替换选择界面
         if (slotIndex === -1) {
-            // 如果没有空槽，使用第一个槽
-            slotIndex = 0;
+            this.showReplaceSkillDialog(skill);
+            return;
         }
         
         // 确保复制 id
@@ -1271,9 +1306,97 @@ class MazeGame {
         // 关闭选择界面并继续游戏
         document.getElementById('skillSelection').style.display = 'none';
         this.skillSelectionActive = false;
-        this.lastUpdateTime = Date.now();  // 重置时间，避免时间跳变
+        this.lastUpdateTime = Date.now();
         this.isPlaying = true;
-        requestAnimationFrame(() => this.gameLoop());  // 立即开始新的游戏循环
+        requestAnimationFrame(() => this.gameLoop());
+    }
+
+    showReplaceSkillDialog(newSkill) {
+        const dialog = document.createElement('div');
+        dialog.style.position = 'fixed';
+        dialog.style.top = '50%';
+        dialog.style.left = '50%';
+        dialog.style.transform = 'translate(-50%, -50%)';
+        dialog.style.backgroundColor = 'white';
+        dialog.style.padding = '20px';
+        dialog.style.borderRadius = '10px';
+        dialog.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
+        dialog.style.zIndex = '1000';
+        
+        // 添加提示文本
+        const title = document.createElement('div');
+        title.textContent = 'Replace which skill?';
+        title.style.marginBottom = '20px';
+        title.style.textAlign = 'center';
+        dialog.appendChild(title);
+        
+        // 创建技能选择按钮
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.display = 'flex';
+        buttonContainer.style.justifyContent = 'space-around';
+        buttonContainer.style.gap = '10px';
+        
+        // 为每个已装备的技能创建选择按钮
+        this.skillSlots.forEach((slot, index) => {
+            const button = document.createElement('div');
+            button.style.cursor = 'pointer';
+            button.style.padding = '10px';
+            button.style.border = '1px solid black';
+            button.style.borderRadius = '5px';
+            
+            // 创建技能图标容器
+            const iconContainer = document.createElement('div');
+            iconContainer.style.width = '50px';
+            iconContainer.style.height = '50px';
+            this.drawSkillIcon(iconContainer, slot);
+            button.appendChild(iconContainer);
+            
+            // 添加点击事件
+            button.onclick = () => {
+                this.skillSlots[index] = {
+                    ...newSkill,
+                    id: newSkill.id
+                };
+                this.updateSkillSlots();
+                dialog.remove();
+                
+                // 关闭选择界面并继续游戏
+                document.getElementById('skillSelection').style.display = 'none';
+                this.skillSelectionActive = false;
+                this.lastUpdateTime = Date.now();
+                this.isPlaying = true;
+                requestAnimationFrame(() => this.gameLoop());
+            };
+            
+            buttonContainer.appendChild(button);
+        });
+        
+        dialog.appendChild(buttonContainer);
+        
+        // 添加关闭按钮
+        const closeButton = document.createElement('div');
+        closeButton.style.position = 'absolute';
+        closeButton.style.top = '10px';
+        closeButton.style.right = '10px';
+        closeButton.style.width = '20px';
+        closeButton.style.height = '20px';
+        closeButton.style.cursor = 'pointer';
+        closeButton.style.fontSize = '20px';
+        closeButton.style.lineHeight = '20px';
+        closeButton.style.textAlign = 'center';
+        closeButton.innerHTML = '×';
+        closeButton.onclick = () => {
+            dialog.remove();
+            // 关闭选择界面并继续游戏
+            document.getElementById('skillSelection').style.display = 'none';
+            this.skillSelectionActive = false;
+            this.lastUpdateTime = Date.now();
+            this.isPlaying = true;
+            requestAnimationFrame(() => this.gameLoop());
+        };
+        dialog.appendChild(closeButton);
+        
+        document.body.appendChild(dialog);
     }
 
     updateSkillSlots() {
