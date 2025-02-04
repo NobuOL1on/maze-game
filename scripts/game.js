@@ -1319,14 +1319,31 @@ class MazeGame {
         const dirX = gravityX / magnitude;
         const dirY = gravityY / magnitude;
         
-        // 检测前方的墙
-        const cellX = Math.floor((this.ball.x + dirX * this.cellSize) / this.cellSize);
-        const cellY = Math.floor((this.ball.y + dirY * this.cellSize) / this.cellSize);
+        // 计算当前位置和目标位置
+        const currentCellX = Math.floor(this.ball.x / this.cellSize);
+        const currentCellY = Math.floor(this.ball.y / this.cellSize);
+        const targetCellX = Math.floor((this.ball.x + dirX * this.cellSize * 2) / this.cellSize);
+        const targetCellY = Math.floor((this.ball.y + dirY * this.cellSize * 2) / this.cellSize);
         
-        if (this.maze[cellY][cellX] === 1) {
-            // 传送到墙的另一边
-            this.ball.x += dirX * this.cellSize * 2;
-            this.ball.y += dirY * this.cellSize * 2;
+        // 安全检查：确保目标位置在迷宫范围内且是可通行的
+        if (targetCellX >= 0 && targetCellX < this.maze[0].length &&
+            targetCellY >= 0 && targetCellY < this.maze.length &&
+            this.maze[currentCellY][currentCellX] === 0 &&  // 当前位置是通道
+            this.maze[targetCellY][targetCellX] === 0) {   // 目标位置是通道
+            
+            // 检查是否需要穿墙
+            const wallX = Math.floor((this.ball.x + dirX * this.cellSize) / this.cellSize);
+            const wallY = Math.floor((this.ball.y + dirY * this.cellSize) / this.cellSize);
+            
+            if (this.maze[wallY][wallX] === 1) {
+                // 传送到墙的另一边
+                // 确保小球位于目标格子的中心
+                this.ball.x = (targetCellX + 0.5) * this.cellSize;
+                this.ball.y = (targetCellY + 0.5) * this.cellSize;
+                // 重置速度，避免穿墙后的异常运动
+                this.ball.velocity.x = 0;
+                this.ball.velocity.y = 0;
+            }
         }
     }
 
