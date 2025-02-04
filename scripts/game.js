@@ -292,11 +292,11 @@ class MazeGame {
                     const cellY = y * this.cellSize;
 
                     if (cell === 1) {
-                        this.ctx.fillStyle = '#333';
+                        this.ctx.fillStyle = '#000';
                         this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
                     } else if (cell === 3) {
                         this.ctx.beginPath();
-                        this.ctx.strokeStyle = '#333';
+                        this.ctx.strokeStyle = '#000';
                         this.ctx.lineWidth = 2;
                         const radius = this.cellSize * 0.3;
                         this.ctx.arc(
@@ -357,13 +357,13 @@ class MazeGame {
                 const cellX = x * this.cellSize;
                 const cellY = y * this.cellSize;
 
-                this.ctx.fillStyle = cell === 1 ? '#333' : '#fff';
+                this.ctx.fillStyle = cell === 1 ? '#000' : '#fff';
 
                 if (cell === 1) {
                     this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
                 } else if (cell === 3) {
                     this.ctx.beginPath();
-                    this.ctx.strokeStyle = '#333';
+                    this.ctx.strokeStyle = '#000';
                     this.ctx.lineWidth = 2;
                     const radius = this.cellSize * 0.3;
                     this.ctx.arc(
