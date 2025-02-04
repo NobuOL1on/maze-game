@@ -1419,11 +1419,16 @@ class MazeGame {
             return;
         }
         
-        // 使用技能
-        skill.effect();
+        // 使用技能并检查是否生效
+        let skillEffective = true;
+        if (skill.id === 'wallPass') {
+            skillEffective = skill.effect();
+        } else {
+            skill.effect();
+        }
         
         // 如果是主动技能，减少使用次数
-        if (skill.type === 'active') {
+        if (skill.type === 'active' && skillEffective) {
             skill.uses--;
             if (skill.uses <= 0) {
                 this.skillSlots[slotIndex] = null;
@@ -1439,38 +1444,70 @@ class MazeGame {
         const gravityY = this.ball.acceleration.y;
         const magnitude = Math.sqrt(gravityX * gravityX + gravityY * gravityY);
         
-        if (magnitude === 0) return;
+        if (magnitude === 0) return false;  // 添加返回值表示技能是否生效
         
         // 归一化重力向量
         const dirX = gravityX / magnitude;
         const dirY = gravityY / magnitude;
         
-        // 计算当前位置和目标位置
+        // 获取当前格子位置
         const currentCellX = Math.floor(this.ball.x / this.cellSize);
         const currentCellY = Math.floor(this.ball.y / this.cellSize);
-        const targetCellX = Math.floor((this.ball.x + dirX * this.cellSize * 2) / this.cellSize);
-        const targetCellY = Math.floor((this.ball.y + dirY * this.cellSize * 2) / this.cellSize);
         
-        // 安全检查：确保目标位置在迷宫范围内且是可通行的
-        if (targetCellX >= 0 && targetCellX < this.maze[0].length &&
-            targetCellY >= 0 && targetCellY < this.maze.length &&
-            this.maze[currentCellY][currentCellX] === 0 &&  // 当前位置是通道
-            this.maze[targetCellY][targetCellX] === 0) {   // 目标位置是通道
+        // 检查周围的墙壁
+        const walls = [
+            { dx: 1, dy: 0, angle: 0 },    // 右
+            { dx: 0, dy: 1, angle: Math.PI/2 },  // 下
+            { dx: -1, dy: 0, angle: Math.PI },   // 左
+            { dx: 0, dy: -1, angle: -Math.PI/2 } // 上
+        ];
+        
+        // 找到与重力方向最接近的墙
+        let bestWall = null;
+        let bestAngleDiff = Math.PI;
+        const gravityAngle = Math.atan2(dirY, dirX);
+        
+        walls.forEach(wall => {
+            // 检查这个方向是否有墙
+            const wallX = currentCellX + wall.dx;
+            const wallY = currentCellY + wall.dy;
             
-            // 检查是否需要穿墙
-            const wallX = Math.floor((this.ball.x + dirX * this.cellSize) / this.cellSize);
-            const wallY = Math.floor((this.ball.y + dirY * this.cellSize) / this.cellSize);
+            if (wallX >= 0 && wallX < this.maze[0].length &&
+                wallY >= 0 && wallY < this.maze.length &&
+                this.maze[wallY][wallX] === 1) {
+                
+                // 计算与重力方向的角度差
+                let angleDiff = Math.abs(wall.angle - gravityAngle);
+                if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
+                
+                if (angleDiff < bestAngleDiff) {
+                    bestAngleDiff = angleDiff;
+                    bestWall = wall;
+                }
+            }
+        });
+        
+        // 如果找到合适的墙
+        if (bestWall) {
+            // 计算目标位置
+            const targetCellX = currentCellX + bestWall.dx * 2;
+            const targetCellY = currentCellY + bestWall.dy * 2;
             
-            if (this.maze[wallY][wallX] === 1) {
+            // 检查目标位置是否有效
+            if (targetCellX >= 0 && targetCellX < this.maze[0].length &&
+                targetCellY >= 0 && targetCellY < this.maze.length &&
+                this.maze[targetCellY][targetCellX] === 0) {   // 目标位置是通道
+                
                 // 传送到墙的另一边
-                // 确保小球位于目标格子的中心
                 this.ball.x = (targetCellX + 0.5) * this.cellSize;
                 this.ball.y = (targetCellY + 0.5) * this.cellSize;
                 // 重置速度，避免穿墙后的异常运动
                 this.ball.velocity.x = 0;
                 this.ball.velocity.y = 0;
+                return true;  // 技能生效
             }
         }
+        return false;  // 技能未生效
     }
 
     useTimeStop() {
