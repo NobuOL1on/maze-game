@@ -254,13 +254,6 @@ class MazeGame {
         this.canvas.style.display = 'block';
         document.getElementById('startButton').style.display = 'none';
         
-        // 在无限模式下显示返回按钮
-        if (mode === 'infinite') {
-            this.backButton.style.display = 'block';
-        } else {
-            this.backButton.style.display = 'none';
-        }
-        
         // 重置游戏状态
         this.resetGameState();
         this.resizeCanvas();
@@ -268,18 +261,27 @@ class MazeGame {
         this.resetBall();
         this.generateMaze();
         
+        // 在无限模式下显示返回按钮
+        if (mode === 'infinite') {
+            this.backButton.style.display = 'block';
+        } else {
+            this.backButton.style.display = 'none';
+        }
+        
         if (mode === 'challenge') {
             this.countdownContainer.style.display = 'block';
             document.getElementById('skillSlots').style.display = 'block';
             this.timeLeft = 30000; // 30秒
             this.lastUpdateTime = Date.now();
             this.updateCountdown();
-            this.gameLoop();  // 确保游戏循环立即开始
         } else {
             this.countdownContainer.style.display = 'none';
             document.getElementById('skillSlots').style.display = 'none';
-            this.gameLoop();
         }
+        
+        // 启动游戏循环
+        this.lastUpdateTime = Date.now();
+        requestAnimationFrame(() => this.gameLoop());
         
         this.startTime = Date.now();
     }
@@ -306,25 +308,24 @@ class MazeGame {
     }
 
     update() {
-        // 更新速度
-        this.ball.velocity.x += this.ball.acceleration.x;
-        this.ball.velocity.y += this.ball.acceleration.y;
-        
-        // 限制速度
-        const maxSpeed = 5; // 设置最大速度
-        const speed = Math.sqrt(this.ball.velocity.x ** 2 + this.ball.velocity.y ** 2);
-        if (speed > maxSpeed) {
-            const scale = maxSpeed / speed;
-            this.ball.velocity.x *= scale;
-            this.ball.velocity.y *= scale;
-        }
-        
-        // 检测是否与墙壁接触
-        let touchingWall = false;
+        const currentTime = Date.now();
+        const deltaTime = currentTime - this.lastUpdateTime;
+        this.lastUpdateTime = currentTime;
+
+        // 更新小球速度
+        this.ball.velocity.x += this.ball.acceleration.x * deltaTime;
+        this.ball.velocity.y += this.ball.acceleration.y * deltaTime;
+
+        // 应用阻尼
+        this.ball.velocity.x *= 0.98;
+        this.ball.velocity.y *= 0.98;
+
+        // 检测碰撞
         const cellX = Math.floor(this.ball.x / this.cellSize);
         const cellY = Math.floor(this.ball.y / this.cellSize);
 
         // 检查周围的单元格是否是墙
+        let touchingWall = false;
         for (let dy = -1; dy <= 1; dy++) {
             for (let dx = -1; dx <= 1; dx++) {
                 const checkY = cellY + dy;
@@ -572,25 +573,22 @@ class MazeGame {
     }
 
     gameLoop() {
+        if (!this.isPlaying) return;
+
         // 更新倒计时
         if (this.gameMode === 'challenge' && !this.isGameOver) {
             const currentTime = Date.now();
-            if (this.lastUpdateTime) {
-                // 如果时间停止技能未激活，才减少时间
-                if (!this.activeSkillEffects.timeStopActive) {
-                    this.timeLeft -= currentTime - this.lastUpdateTime;
-                }
-                if (this.timeLeft <= 0) {
-                    this.gameOver();
-                    return;
-                }
-                this.updateCountdown();
+            // 如果时间停止技能未激活，才减少时间
+            if (!this.activeSkillEffects.timeStopActive) {
+                this.timeLeft -= currentTime - this.lastUpdateTime;
             }
-            this.lastUpdateTime = currentTime;
+            if (this.timeLeft <= 0) {
+                this.gameOver();
+                return;
+            }
+            this.updateCountdown();
         }
 
-        if (!this.isPlaying) return;
-        
         // 更新物理状态
         this.update();
         // 绘制画面
