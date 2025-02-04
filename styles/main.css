@@ -6,13 +6,16 @@
 
 body {
     margin: 0;
-    padding: 0px 0;
+    padding: 0;
     display: flex;
     justify-content: flex-start;
     align-items: center;
     min-height: 100vh;
+    min-height: -webkit-fill-available;
     background-color: #f0f0f0;
     font-family: Arial, sans-serif;
+    overflow-x: hidden;
+    width: 100%;
 }
 
 #game-container {
@@ -72,16 +75,22 @@ button:active {
 #startPage {
     width: 100%;
     max-width: 800px;
-    aspect-ratio: 3/4;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
     background-color: #fff;
-    padding: 0px;
+    padding: 0;
     box-shadow: 0 0 20px rgba(0,0,0,0.1);
     border-radius: 10px;
+    margin: 0;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 #startPage h1 {
     font-size: 2.5em;
-    margin-bottom: 20px;
+    margin: 20px 0;
     color: #000;
 }
 
@@ -90,4 +99,16 @@ button:active {
     padding: 15px 30px;
     background-color: #000;
     color: #fff;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+    body {
+        padding: 0;
+    }
+    
+    #startPage {
+        border-radius: 0;
+        box-shadow: none;
+    }
 } 
