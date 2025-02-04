@@ -422,12 +422,26 @@ class MazeGame {
         } else if (this.currentSpecialLevel === 'key') {
             // 如果还没获得钥匙，绘制钥匙
             if (!this.hasKey) {
-                this.ctx.beginPath();
-                this.ctx.arc(this.keyPosition.x, this.keyPosition.y, 10, 0, Math.PI * 2);
                 this.ctx.fillStyle = '#000';  // 改为黑色
-                this.ctx.fill();
-                this.ctx.strokeStyle = '#000';  // 黑色边框
                 this.ctx.lineWidth = 2;
+                
+                // 绘制钥匙头部（圆圈）
+                this.ctx.beginPath();
+                this.ctx.arc(this.keyPosition.x, this.keyPosition.y - 5, 5, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                // 绘制钥匙柄（竖线）
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.keyPosition.x, this.keyPosition.y - 2);
+                this.ctx.lineTo(this.keyPosition.x, this.keyPosition.y + 8);
+                this.ctx.stroke();
+                
+                // 绘制钥匙齿（两根横线）
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.keyPosition.x, this.keyPosition.y + 8);
+                this.ctx.lineTo(this.keyPosition.x + 6, this.keyPosition.y + 8);
+                this.ctx.moveTo(this.keyPosition.x, this.keyPosition.y + 6);
+                this.ctx.lineTo(this.keyPosition.x + 4, this.keyPosition.y + 6);
                 this.ctx.stroke();
             }
 
