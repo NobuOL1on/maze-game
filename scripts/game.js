@@ -515,11 +515,12 @@ class MazeGame {
         if (this.currentSpecialLevel === 'fog' || 
             this.currentSpecialLevel === 'lightning' || 
             this.currentSpecialLevel === 'breadcrumb') {
-            // 先绘制普通迷宫
-            this.drawNormalMaze();
-            
-            // 如果全局照明技能未激活，才应用特殊效果
-            if (!this.activeSkillEffects.globalLightActive) {
+            // 如果全局照明技能激活，则不应用特殊效果
+            if (this.activeSkillEffects.globalLightActive) {
+                // 绘制普通迷宫
+                this.drawNormalMaze();
+            } else {
+                // 应用特殊效果
                 if (this.currentSpecialLevel === 'fog') {
                     this.ctx.fillStyle = '#000';
                     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -675,9 +676,6 @@ class MazeGame {
                     }
                 }
             }
-        } else {
-            // 绘制普通迷宫
-            this.drawNormalMaze();
         }
 
         for (let y = 0; y < this.maze.length; y++) {
@@ -1361,37 +1359,51 @@ class MazeGame {
     useGlobalLight() {
         // 检查是否在可用的特殊关卡中
         if (!['fog', 'lightning', 'breadcrumb'].includes(this.currentSpecialLevel)) {
-            return false;
+            return false;  // 如果不在特殊关卡中，不允许使用
         }
         
-        this.activeSkillEffects.globalLightActive = true;
-        this.activeSkillEffects.globalLightRemaining = 5000; // 5秒
+        // 暂停游戏
+        this.isPlaying = false;
         
-        // 保存当前游戏状态
-        const wasPlaying = this.isPlaying;
+        // 保存当前的特殊关卡状态
+        const originalSpecialLevel = this.currentSpecialLevel;
+        
+        // 临时移除特殊效果以显示完整迷宫
+        this.currentSpecialLevel = null;
+        
+        // 重新绘制一次以显示完整迷宫
+        this.draw();
         
         // 添加视觉反馈
-        const flash = document.createElement('div');
-        flash.style.position = 'absolute';
-        flash.style.top = '0';
-        flash.style.left = '0';
-        flash.style.width = '100%';
-        flash.style.height = '100%';
-        flash.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
-        flash.style.transition = 'opacity 0.3s';
-        document.getElementById('game-container').appendChild(flash);
+        const overlay = document.createElement('div');
+        overlay.style.position = 'fixed';
+        overlay.style.top = '50%';
+        overlay.style.left = '50%';
+        overlay.style.transform = 'translate(-50%, -50%)';
+        overlay.style.padding = '10px';
+        overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        overlay.style.color = 'white';
+        overlay.style.borderRadius = '5px';
+        overlay.textContent = 'Viewing Full Maze (5s)';
+        document.getElementById('game-container').appendChild(overlay);
         
-        // 淡出效果
+        // 5秒后恢复游戏
         setTimeout(() => {
-            flash.style.opacity = '0';
-            setTimeout(() => flash.remove(), 300);
-            // 恢复游戏状态
-            if (wasPlaying) {
-                this.isPlaying = true;
-            }
-        }, 100);
+            // 恢复特殊关卡效果
+            this.currentSpecialLevel = originalSpecialLevel;
+            
+            // 移除提示
+            overlay.style.opacity = '0';
+            overlay.style.transition = 'opacity 0.3s';
+            setTimeout(() => overlay.remove(), 300);
+            
+            // 重置时间并恢复游戏
+            this.lastUpdateTime = Date.now();
+            this.isPlaying = true;
+            requestAnimationFrame(() => this.gameLoop());
+        }, 5000);
         
-        return true;
+        return true;  // 技能使用成功
     }
 
     useTeleport() {
