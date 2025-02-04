@@ -717,7 +717,18 @@ class MazeGame {
         // 在页面左上角绘制关卡信息
         this.ctx.fillStyle = '#fff'; // 改为白色
         this.ctx.font = 'bold 24px Arial';
-        const levelText = `LEVEL ${this.level}`;
+        let levelText = `LEVEL ${this.level}`;
+        if (this.currentSpecialLevel) {
+            const specialLevelNames = {
+                'fog': 'Fog',
+                'antiGravity': 'Anti-Gravity',
+                'lightning': 'Lightning',
+                'breadcrumb': 'Breadcrumb',
+                'key': 'Key',
+                'fakeExit': 'Fake Exit'
+            };
+            levelText += ` - ${specialLevelNames[this.currentSpecialLevel]}`;
+        }
         this.ctx.fillText(levelText, 10, 30);
     }
 
