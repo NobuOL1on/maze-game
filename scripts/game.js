@@ -381,6 +381,7 @@ class MazeGame {
                 this.activeSkillEffects.timeStopRemaining -= deltaTime;
                 if (this.activeSkillEffects.timeStopRemaining <= 0) {
                     this.activeSkillEffects.timeStopActive = false;
+                    this.lastUpdateTime = Date.now();  // 重置时间戳，避免累积延迟
                 }
             }
             
@@ -1332,6 +1333,7 @@ class MazeGame {
     useTimeStop() {
         this.activeSkillEffects.timeStopActive = true;
         this.activeSkillEffects.timeStopRemaining = 5000; // 5秒
+        this.lastUpdateTime = Date.now();  // 重置时间戳，确保准确的计时
     }
 
     useGlobalLight() {
