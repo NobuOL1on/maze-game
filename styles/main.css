@@ -5,13 +5,14 @@
 }
 
 body {
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
-    background-color: #f0f0f0;
+    margin: 0;
+    padding: 20px 0;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
+    min-height: 100vh;
+    background-color: #f0f0f0;
+    font-family: Arial, sans-serif;
 }
 
 #game-container {
