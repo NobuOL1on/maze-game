@@ -271,18 +271,50 @@ class MazeGame {
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+        // 先绘制迷宫的墙壁和终点
+        for (let y = 0; y < this.maze.length; y++) {
+            for (let x = 0; x < this.maze[0].length; x++) {
+                const cell = this.maze[y][x];
+                const cellX = x * this.cellSize;
+                const cellY = y * this.cellSize;
+
+                if (cell === 1) {
+                    this.ctx.fillStyle = '#333';
+                    this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
+                } else if (cell === 3) {
+                    this.ctx.beginPath();
+                    this.ctx.strokeStyle = '#333';
+                    this.ctx.lineWidth = 2;
+                    const radius = this.cellSize * 0.3;
+                    this.ctx.arc(
+                        cellX + this.cellSize / 2,
+                        cellY + this.cellSize / 2,
+                        radius,
+                        0,
+                        Math.PI * 2
+                    );
+                    this.ctx.stroke();
+                }
+            }
+        }
+
         // 应用特殊关卡效果
         if (this.currentSpecialLevel === 'fog') {
+            // 只在空地上绘制黑色遮罩
+            this.ctx.globalCompositeOperation = 'source-atop';
             this.ctx.fillStyle = '#000';
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.globalCompositeOperation = 'source-over';
             this.ctx.save();
             this.ctx.beginPath();
-            this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 10, 0, Math.PI * 2); // 视野改为两倍
+            this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 10, 0, Math.PI * 2);
             this.ctx.clip();
         } else if (this.currentSpecialLevel === 'breadcrumb') {
-            // 绘制黑色背景
+            // 只在空地上绘制黑色遮罩
+            this.ctx.globalCompositeOperation = 'source-atop';
             this.ctx.fillStyle = '#000';
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.globalCompositeOperation = 'source-over';
             
             // 绘制面包屑轨迹
             if (this.breadcrumbs.length > 1) {
@@ -292,7 +324,7 @@ class MazeGame {
                     this.ctx.lineTo(this.breadcrumbs[i].x, this.breadcrumbs[i].y);
                 }
                 this.ctx.strokeStyle = '#fff';
-                this.ctx.lineWidth = this.ball.radius * 4;  // 轨迹宽度为小球直径的2倍
+                this.ctx.lineWidth = this.ball.radius * 4;
                 this.ctx.stroke();
             }
 
@@ -318,33 +350,6 @@ class MazeGame {
                 this.ctx.beginPath();
                 this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 0.5, 0, Math.PI * 2); // 微弱光
                 this.ctx.clip();
-            }
-        }
-
-        for (let y = 0; y < this.maze.length; y++) {
-            for (let x = 0; x < this.maze[0].length; x++) {
-                const cell = this.maze[y][x];
-                const cellX = x * this.cellSize;
-                const cellY = y * this.cellSize;
-
-                this.ctx.fillStyle = cell === 1 ? '#333' : '#fff';
-
-                if (cell === 1) {
-                    this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
-                } else if (cell === 3) {
-                    this.ctx.beginPath();
-                    this.ctx.strokeStyle = '#333';
-                    this.ctx.lineWidth = 2;
-                    const radius = this.cellSize * 0.3;
-                    this.ctx.arc(
-                        cellX + this.cellSize / 2,
-                        cellY + this.cellSize / 2,
-                        radius,
-                        0,
-                        Math.PI * 2
-                    );
-                    this.ctx.stroke();
-                }
             }
         }
 
