@@ -149,7 +149,7 @@ class MazeGame {
                 type: 'passive',
                 name: 'Time Boots',
                 icon: '⏱️',
-                description: 'Gain 0.1s for each cell moved',
+                description: 'Gain 0.05s for each cell moved',
                 effect: () => this.applyTimeBoots()
             },
             cornerSlow: {
@@ -414,7 +414,7 @@ class MazeGame {
             const newCellX = Math.floor(this.ball.x / this.cellSize);
             const newCellY = Math.floor(this.ball.y / this.cellSize);
             if (newCellX !== this.lastCell?.x || newCellY !== this.lastCell?.y) {
-                this.timeLeft += 100; // 增加0.1秒
+                this.timeLeft += 50; // 增加0.05秒
                 this.lastCell = { x: newCellX, y: newCellY };
             }
         }
@@ -1098,21 +1098,20 @@ class MazeGame {
 
     drawSkillIcon(container, skill) {
         const canvas = document.createElement('canvas');
-        // 设置canvas的显示大小
-        canvas.style.width = '100%';
-        canvas.style.height = '100%';
-        // 设置canvas的实际大小，提高清晰度
-        canvas.width = container.clientWidth * 2;
-        canvas.height = container.clientHeight * 2;
+        // 使用容器的实际尺寸
+        const size = container.clientWidth || 60; // 如果容器尺寸未定义，使用默认值60
+        canvas.width = size;
+        canvas.height = size;
         const ctx = canvas.getContext('2d');
-        // 缩放以匹配显示大小
-        ctx.scale(2, 2);
         
         ctx.strokeStyle = '#000';
         ctx.lineWidth = 2;
         
         // 根据技能类型绘制不同的图标
         if (!skill || !skill.id) return;  // 添加安全检查
+        
+        // 清除画布
+        ctx.clearRect(0, 0, size, size);
         
         switch(skill.id) {
             case 'wallPass':
@@ -1204,6 +1203,9 @@ class MazeGame {
         // 清除容器中的现有内容
         container.innerHTML = '';
         container.appendChild(canvas);
+        // 确保canvas填满容器
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
     }
 
     // 辅助方法：绘制箭头
