@@ -252,22 +252,6 @@ class MazeGame {
         this.ball.x += this.ball.velocity.x;
         this.ball.y += this.ball.velocity.y;
 
-        // 检查是否到达终点
-        if (this.maze[cellY][cellX] === 3) {
-            // 在钥匙关卡中，必须先获得钥匙才能通关
-            if (this.currentSpecialLevel === 'key' && !this.hasKey) {
-                return;
-            }
-            this.levelComplete();
-        } else if (
-            this.currentSpecialLevel === 'fakeExit' &&
-            cellX === this.fakeExitPosition.x &&
-            cellY === this.fakeExitPosition.y
-        ) {
-            // 如果碰到假出口，重置到起点
-            this.resetBall();
-        }
-
         // 检查是否获得钥匙
         if (this.currentSpecialLevel === 'key' && !this.hasKey) {
             const dx = this.ball.x - this.keyPosition.x;
