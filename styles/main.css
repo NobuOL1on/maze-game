@@ -106,12 +106,39 @@ button:active {
     margin-top: 20px;
 }
 
+.skill-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.skill-option button {
+    width: 100px;
+    height: 35px;
+    padding: 8px 0;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 #startPage .content-wrapper {
     margin-top: 50%;
     transform: translateY(-50%);
     display: flex;
     flex-direction: column;
     align-items: center;
+}
+
+#countdown {
+    text-align: center;
+    font-family: monospace;
+    font-size: 18px;
+    letter-spacing: 2px;
+    margin: 10px 0;
+    display: none;
+    color: #000;
 }
 
 /* 移动端适配 */

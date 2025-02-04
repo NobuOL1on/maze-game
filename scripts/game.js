@@ -1168,23 +1168,22 @@ class MazeGame {
         
         switch(skill.id) {
             case 'wallPass':
-                // 三个箭头穿过平行四边形
+                // 三条平行箭头穿过窄平行四边形
                 const arrowWidth = canvas.width * 0.15;
                 const spacing = canvas.width * 0.2;
-                const y = canvas.height / 2;
-                
-                // 绘制平行四边形
-                ctx.beginPath();
-                ctx.moveTo(canvas.width * 0.2, canvas.height * 0.2);
-                ctx.lineTo(canvas.width * 0.8, canvas.height * 0.2);
-                ctx.lineTo(canvas.width * 0.7, canvas.height * 0.8);
-                ctx.lineTo(canvas.width * 0.1, canvas.height * 0.8);
+                const wallWidth = canvas.width * 0.2;  // 原来是 0.6，现在是 0.2
+                const wallStartX = (canvas.width - wallWidth) / 2;  // 居中
+                ctx.moveTo(wallStartX, canvas.height * 0.2);
+                ctx.lineTo(wallStartX + wallWidth, canvas.height * 0.2);
+                ctx.lineTo(wallStartX + wallWidth * 0.8, canvas.height * 0.8);
+                ctx.lineTo(wallStartX - wallWidth * 0.2, canvas.height * 0.8);
                 ctx.closePath();
                 ctx.stroke();
                 
                 // 绘制三个箭头
                 for (let i = 0; i < 3; i++) {
-                    this.drawArrow(ctx, canvas.width * 0.3 + i * spacing, y, arrowWidth);
+                    const y = canvas.height * (0.3 + i * 0.2);  // 上中下三个位置
+                    this.drawArrow(ctx, canvas.width * 0.3, y, arrowWidth);
                 }
                 break;
 
