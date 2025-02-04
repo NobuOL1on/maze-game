@@ -1233,7 +1233,9 @@ class MazeGame {
         // 关闭选择界面并继续游戏
         document.getElementById('skillSelection').style.display = 'none';
         this.skillSelectionActive = false;
+        this.lastUpdateTime = Date.now();  // 重置时间，避免时间跳变
         this.isPlaying = true;
+        requestAnimationFrame(() => this.gameLoop());  // 立即开始新的游戏循环
     }
 
     updateSkillSlots() {
