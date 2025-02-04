@@ -70,11 +70,13 @@ class MazeGame {
         };
 
         // 定义特殊关卡类型
-        this.specialLevels = ['fog', 'antiGravity', 'lightning', 'breadcrumb'];
+        this.specialLevels = ['fog', 'antiGravity', 'lightning', 'breadcrumb', 'key'];
         this.currentSpecialLevel = null;
         this.lightningTimer = 0; // 用于控制闪电的计时器
         this.lightningDuration = 1000; // 闪电持续时间（毫秒）
         this.nextLightning = this.getRandomLightningInterval(); // 下次闪电的时间
+        this.hasKey = false;  // 是否获得钥匙
+        this.keyPosition = { x: 0, y: 0 };  // 钥匙位置
 
         this.score = 0; // 初始化分数
         this.startTime = null; // 记录关卡开始时间
@@ -251,7 +253,21 @@ class MazeGame {
 
         // 检查是否到达终点
         if (this.maze[cellY][cellX] === 3) {
+            // 在钥匙关卡中，必须先获得钥匙才能通关
+            if (this.currentSpecialLevel === 'key' && !this.hasKey) {
+                return;
+            }
             this.levelComplete();
+        }
+
+        // 检查是否获得钥匙
+        if (this.currentSpecialLevel === 'key' && !this.hasKey) {
+            const dx = this.ball.x - this.keyPosition.x;
+            const dy = this.ball.y - this.keyPosition.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < this.ball.radius + 10) {
+                this.hasKey = true;
+            }
         }
 
         // 记录面包屑
@@ -403,6 +419,39 @@ class MazeGame {
                 this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 0.5, 0, Math.PI * 2); // 微弱光
                 this.ctx.clip();
             }
+        } else if (this.currentSpecialLevel === 'key') {
+            // 如果还没获得钥匙，绘制钥匙
+            if (!this.hasKey) {
+                this.ctx.beginPath();
+                this.ctx.arc(this.keyPosition.x, this.keyPosition.y, 10, 0, Math.PI * 2);
+                this.ctx.fillStyle = '#000';  // 改为黑色
+                this.ctx.fill();
+                this.ctx.strokeStyle = '#000';  // 黑色边框
+                this.ctx.lineWidth = 2;
+                this.ctx.stroke();
+            }
+
+            // 绘制终点圆圈
+            for (let y = 0; y < this.maze.length; y++) {
+                for (let x = 0; x < this.maze[0].length; x++) {
+                    if (this.maze[y][x] === 3) {
+                        const cellX = x * this.cellSize;
+                        const cellY = y * this.cellSize;
+                        this.ctx.beginPath();
+                        this.ctx.strokeStyle = '#000';  // 保持普通模式的黑色
+                        this.ctx.lineWidth = 2;
+                        const radius = this.cellSize * 0.3;
+                        this.ctx.arc(
+                            cellX + this.cellSize / 2,
+                            cellY + this.cellSize / 2,
+                            radius,
+                            0,
+                            Math.PI * 2
+                        );
+                        this.ctx.stroke();
+                    }
+                }
+            }
         }
 
         for (let y = 0; y < this.maze.length; y++) {
@@ -432,7 +481,7 @@ class MazeGame {
             }
         }
 
-        if (this.currentSpecialLevel === 'fog' || this.currentSpecialLevel === 'lightning' || this.currentSpecialLevel === 'breadcrumb') {
+        if (this.currentSpecialLevel === 'fog' || this.currentSpecialLevel === 'lightning' || this.currentSpecialLevel === 'breadcrumb' || this.currentSpecialLevel === 'key') {
             this.ctx.restore();
         }
 
@@ -492,6 +541,11 @@ class MazeGame {
         // 确定是否为特殊关卡
         if (this.level % 3 === 0) {
             this.currentSpecialLevel = this.specialLevels[Math.floor(Math.random() * this.specialLevels.length)];
+            // 如果是钥匙关卡，初始化钥匙
+            if (this.currentSpecialLevel === 'key') {
+                this.hasKey = false;
+                this.placeKey();
+            }
         } else {
             this.currentSpecialLevel = null;
         }
@@ -548,6 +602,23 @@ class MazeGame {
         } while (this.maze[this.endY][this.endX] !== 0 || (this.endY < 3 && this.endX < 3)); // 确保出口不在起始点附近且在可达区域
 
         this.maze[this.endY][this.endX] = 3; // 终点标记
+    }
+
+    placeKey() {
+        let keyX, keyY;
+        do {
+            keyX = Math.floor(Math.random() * (this.maze[0].length - 2)) + 1;
+            keyY = Math.floor(Math.random() * (this.maze.length - 2)) + 1;
+        } while (
+            this.maze[keyY][keyX] !== 0 || // 确保钥匙在通道上
+            (keyX < 3 && keyY < 3) || // 不要太靠近起点
+            (Math.abs(keyX - this.endX) < 2 && Math.abs(keyY - this.endY) < 2) // 不要太靠近终点
+        );
+        
+        this.keyPosition = {
+            x: (keyX + 0.5) * this.cellSize,
+            y: (keyY + 0.5) * this.cellSize
+        };
     }
 
     levelComplete() {
@@ -637,6 +708,8 @@ class MazeGame {
             velocity: { x: 0, y: 0 },
             acceleration: { x: 0, y: 0 }
         };
+        this.hasKey = false;
+        this.keyPosition = { x: 0, y: 0 };
     }
 }
 
