@@ -1496,28 +1496,10 @@ class MazeGame {
         // 重新绘制一次以显示完整迷宫
         this.draw();
         
-        // 添加视觉反馈
-        const overlay = document.createElement('div');
-        overlay.style.position = 'fixed';
-        overlay.style.top = '50%';
-        overlay.style.left = '50%';
-        overlay.style.transform = 'translate(-50%, -50%)';
-        overlay.style.padding = '10px';
-        overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-        overlay.style.color = 'white';
-        overlay.style.borderRadius = '5px';
-        overlay.textContent = 'Viewing Full Maze (5s)';
-        document.getElementById('game-container').appendChild(overlay);
-        
         // 5秒后恢复游戏
         setTimeout(() => {
             // 恢复特殊关卡效果
             this.currentSpecialLevel = originalSpecialLevel;
-            
-            // 移除提示
-            overlay.style.opacity = '0';
-            overlay.style.transition = 'opacity 0.3s';
-            setTimeout(() => overlay.remove(), 300);
             
             // 重置时间并恢复游戏
             this.lastUpdateTime = Date.now();
