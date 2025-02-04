@@ -111,6 +111,7 @@ class MazeGame {
                 name: 'Wall Pass',
                 uses: 3,
                 icon: '➡️',
+                description: 'Pass through a wall in the direction closest to gravity',
                 effect: this.useWallPass.bind(this)
             },
             timeStop: {
@@ -134,7 +135,7 @@ class MazeGame {
                 name: 'Teleport',
                 uses: 3,
                 icon: '🔄',
-                description: 'Teleport closer to the exit',
+                description: 'Teleport to a position with shorter straight-line distance to exit',
                 effect: () => this.useTeleport()
             },
             // 被动技能
@@ -1151,21 +1152,15 @@ class MazeGame {
 
     drawSkillIcon(container, skill) {
         const canvas = document.createElement('canvas');
-        // 使用容器的实际尺寸
-        const size = container.clientWidth || 60; // 如果容器尺寸未定义，使用默认值60
-        canvas.width = size;
-        canvas.height = size;
+        canvas.width = 50;
+        canvas.height = 50;
+        container.appendChild(canvas);
         const ctx = canvas.getContext('2d');
         
         ctx.strokeStyle = '#000';
         ctx.lineWidth = 2;
         
-        // 根据技能类型绘制不同的图标
-        if (!skill || !skill.id) return;  // 添加安全检查
-        
-        // 清除画布
-        ctx.clearRect(0, 0, size, size);
-        
+        // 绘制技能图标
         switch(skill.id) {
             case 'wallPass':
                 // 三条平行箭头穿过窄平行四边形
@@ -1250,6 +1245,15 @@ class MazeGame {
                 ctx.strokeRect(canvas.width/2 - roadWidth/2, 0, roadWidth, canvas.height);
                 ctx.strokeRect(0, canvas.height/2 - roadWidth/2, canvas.width, roadWidth);
                 break;
+        }
+        
+        // 如果是主动技能，显示剩余使用次数
+        if (skill.type === 'active' && skill.uses !== undefined) {
+            ctx.fillStyle = '#000';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(skill.uses, canvas.width - 2, canvas.height - 2);
         }
         
         // 清除容器中的现有内容
