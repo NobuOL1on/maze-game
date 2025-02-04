@@ -1098,14 +1098,22 @@ class MazeGame {
 
     drawSkillIcon(container, skill) {
         const canvas = document.createElement('canvas');
-        canvas.width = container.clientWidth;
-        canvas.height = container.clientHeight;
+        // 设置canvas的显示大小
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        // 设置canvas的实际大小，提高清晰度
+        canvas.width = container.clientWidth * 2;
+        canvas.height = container.clientHeight * 2;
         const ctx = canvas.getContext('2d');
+        // 缩放以匹配显示大小
+        ctx.scale(2, 2);
         
         ctx.strokeStyle = '#000';
         ctx.lineWidth = 2;
         
         // 根据技能类型绘制不同的图标
+        if (!skill || !skill.id) return;  // 添加安全检查
+        
         switch(skill.id) {
             case 'wallPass':
                 // 三个箭头穿过平行四边形
@@ -1193,6 +1201,8 @@ class MazeGame {
                 break;
         }
         
+        // 清除容器中的现有内容
+        container.innerHTML = '';
         container.appendChild(canvas);
     }
 
@@ -1218,6 +1228,8 @@ class MazeGame {
     }
 
     equipSkill(skill) {
+        if (!skill || !skill.id) return;  // 添加安全检查
+        
         // 找到一个空的技能槽或者可以替换的槽
         let slotIndex = this.skillSlots.findIndex(slot => slot === null);
         if (slotIndex === -1) {
@@ -1225,7 +1237,11 @@ class MazeGame {
             slotIndex = 0;
         }
         
-        this.skillSlots[slotIndex] = {...skill};
+        // 确保复制 id
+        this.skillSlots[slotIndex] = {
+            ...skill,
+            id: skill.id
+        };
         
         // 更新技能槽显示
         this.updateSkillSlots();
