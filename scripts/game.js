@@ -70,7 +70,7 @@ class MazeGame {
         };
 
         // 定义特殊关卡类型
-        this.specialLevels = ['fog', 'antiGravity', 'lightning'];
+        this.specialLevels = ['fog', 'antiGravity', 'lightning', 'breadcrumb'];
         this.currentSpecialLevel = null;
         this.lightningTimer = 0; // 用于控制闪电的计时器
         this.lightningDuration = 1000; // 闪电持续时间（毫秒）
@@ -81,6 +81,9 @@ class MazeGame {
         this.totalTime = 0; // 总通关时间
         this.completedLevels = 0; // 已完成的关卡数
         this.levelTimes = []; // 记录每个关卡的通关时间
+
+        // 添加面包屑轨迹存储
+        this.breadcrumbs = new Set();
 
         this.init();
     }
@@ -249,6 +252,13 @@ class MazeGame {
         if (this.maze[cellY][cellX] === 3) {
             this.levelComplete();
         }
+
+        // 记录面包屑
+        if (this.currentSpecialLevel === 'breadcrumb') {
+            const cellX = Math.floor(this.ball.x / this.cellSize);
+            const cellY = Math.floor(this.ball.y / this.cellSize);
+            this.breadcrumbs.add(`${cellX},${cellY}`);
+        }
     }
 
     draw() {
@@ -261,6 +271,32 @@ class MazeGame {
             this.ctx.save();
             this.ctx.beginPath();
             this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 10, 0, Math.PI * 2); // 视野改为两倍
+            this.ctx.clip();
+        } else if (this.currentSpecialLevel === 'breadcrumb') {
+            // 绘制黑色背景
+            this.ctx.fillStyle = '#000';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            
+            // 创建可见区域路径
+            this.ctx.save();
+            this.ctx.beginPath();
+            
+            // 添加当前小球位置的可见区域
+            this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 2, 0, Math.PI * 2);
+            
+            // 添加所有面包屑位置的可见区域
+            this.breadcrumbs.forEach(crumb => {
+                const [x, y] = crumb.split(',').map(Number);
+                this.ctx.moveTo(x * this.cellSize + this.cellSize/2, y * this.cellSize + this.cellSize/2);
+                this.ctx.arc(
+                    x * this.cellSize + this.cellSize/2,
+                    y * this.cellSize + this.cellSize/2,
+                    this.ball.radius * 2,
+                    0,
+                    Math.PI * 2
+                );
+            });
+            
             this.ctx.clip();
         } else if (this.currentSpecialLevel === 'lightning') {
             const currentTime = Date.now();
@@ -309,7 +345,7 @@ class MazeGame {
             }
         }
 
-        if (this.currentSpecialLevel === 'fog' || this.currentSpecialLevel === 'lightning') {
+        if (this.currentSpecialLevel === 'fog' || this.currentSpecialLevel === 'lightning' || this.currentSpecialLevel === 'breadcrumb') {
             this.ctx.restore();
         }
 
@@ -372,6 +408,9 @@ class MazeGame {
         } else {
             this.currentSpecialLevel = null;
         }
+
+        // 重置面包屑
+        this.breadcrumbs.clear();
 
         // 调整画布大小
         this.canvas.width = width * this.cellSize;
