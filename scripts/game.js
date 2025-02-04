@@ -233,7 +233,7 @@ class MazeGame {
         window.addEventListener('deviceorientation', (event) => {
             if (!this.isPlaying) return;
             
-            const sensitivity = 0.1;  // 增加灵敏度
+            const sensitivity = 0.03;
             const direction = this.currentSpecialLevel === 'antiGravity' ? -1 : 1;
             this.ball.acceleration.x = event.gamma * sensitivity * direction;
             this.ball.acceleration.y = event.beta * sensitivity * direction;
@@ -254,19 +254,19 @@ class MazeGame {
         this.canvas.style.display = 'block';
         document.getElementById('startButton').style.display = 'none';
         
-        // 重置游戏状态
-        this.resetGameState();
-        this.resizeCanvas();
-        window.addEventListener('resize', () => this.resizeCanvas());
-        this.resetBall();
-        this.generateMaze();
-        
         // 在无限模式下显示返回按钮
         if (mode === 'infinite') {
             this.backButton.style.display = 'block';
         } else {
             this.backButton.style.display = 'none';
         }
+        
+        // 重置游戏状态
+        this.resetGameState();
+        this.resizeCanvas();
+        window.addEventListener('resize', () => this.resizeCanvas());
+        this.resetBall();
+        this.generateMaze();
         
         if (mode === 'challenge') {
             this.countdownContainer.style.display = 'block';
@@ -279,11 +279,8 @@ class MazeGame {
             document.getElementById('skillSlots').style.display = 'none';
         }
         
-        // 启动游戏循环
-        this.lastUpdateTime = Date.now();
-        requestAnimationFrame(() => this.gameLoop());
-        
         this.startTime = Date.now();
+        this.gameLoop();
     }
 
     pauseGame() {
@@ -308,29 +305,25 @@ class MazeGame {
     }
 
     update() {
-        const currentTime = Date.now();
-        const deltaTime = currentTime - this.lastUpdateTime;
-        this.lastUpdateTime = currentTime;
-
-        // 更新小球速度
-        this.ball.velocity.x += this.ball.acceleration.x * 0.5;  // 使用固定的加速度系数
-        this.ball.velocity.y += this.ball.acceleration.y * 0.5;
-
+        // 更新速度
+        this.ball.velocity.x += this.ball.acceleration.x;
+        this.ball.velocity.y += this.ball.acceleration.y;
+        
         // 限制速度
-        const maxSpeed = 5;
+        const maxSpeed = 5; // 设置最大速度
         const speed = Math.sqrt(this.ball.velocity.x ** 2 + this.ball.velocity.y ** 2);
         if (speed > maxSpeed) {
             const scale = maxSpeed / speed;
             this.ball.velocity.x *= scale;
             this.ball.velocity.y *= scale;
         }
-
-        // 检测碰撞
+        
+        // 检测是否与墙壁接触
+        let touchingWall = false;
         const cellX = Math.floor(this.ball.x / this.cellSize);
         const cellY = Math.floor(this.ball.y / this.cellSize);
 
         // 检查周围的单元格是否是墙
-        let touchingWall = false;
         for (let dy = -1; dy <= 1; dy++) {
             for (let dx = -1; dx <= 1; dx++) {
                 const checkY = cellY + dy;
@@ -472,30 +465,134 @@ class MazeGame {
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // 绘制基本迷宫
-        this.drawMaze();
-        this.drawBall();
-        this.drawExit();
-
         // 处理特殊关卡效果
         if (this.currentSpecialLevel === 'fog' || 
             this.currentSpecialLevel === 'lightning' || 
             this.currentSpecialLevel === 'breadcrumb') {
             
-            if (!this.activeSkillEffects.globalLightActive) {
-                // 应用特殊效果的遮罩
+            if (this.activeSkillEffects.globalLightActive) {
+                // 在全局照亮效果下，先绘制普通迷宫
+                this.drawMaze();
+                this.drawBall();
+                this.drawExit();
+                if (this.currentSpecialLevel === 'key' && !this.hasKey) {
+                    this.drawKey();
+                }
+            } else {
+                // 应用特殊效果
                 if (this.currentSpecialLevel === 'fog') {
-                    // 添加黑色遮罩
-                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+                    this.ctx.fillStyle = '#000';
                     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                    
+                    // 先绘制墙壁
+                    for (let y = 0; y < this.maze.length; y++) {
+                        for (let x = 0; x < this.maze[0].length; x++) {
+                            const cell = this.maze[y][x];
+                            const cellX = x * this.cellSize;
+                            const cellY = y * this.cellSize;
+
+                            if (cell === 1) {
+                                this.ctx.fillStyle = '#000';
+                                this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
+                            } else if (cell === 3) {
+                                this.ctx.beginPath();
+                                this.ctx.strokeStyle = '#000';
+                                this.ctx.lineWidth = 2;
+                                const radius = this.cellSize * 0.3;
+                                this.ctx.arc(
+                                    cellX + this.cellSize / 2,
+                                    cellY + this.cellSize / 2,
+                                    radius,
+                                    0,
+                                    Math.PI * 2
+                                );
+                                this.ctx.stroke();
+                            }
+                        }
+                    }
                     
                     // 创建可见区域
                     this.ctx.save();
                     this.ctx.globalCompositeOperation = 'destination-out';
+                    this.ctx.fillStyle = '#000';
                     this.ctx.beginPath();
                     this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 10, 0, Math.PI * 2);
                     this.ctx.fill();
                     this.ctx.restore();
+                    
+                    // 在可见区域内绘制白色地面
+                    this.ctx.save();
+                    this.ctx.beginPath();
+                    this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 10, 0, Math.PI * 2);
+                    this.ctx.clip();
+                    this.ctx.fillStyle = '#fff';
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                } else if (this.currentSpecialLevel === 'breadcrumb') {
+                    // 绘制黑色背景
+                    this.ctx.fillStyle = '#000';
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                    
+                    // 先绘制墙壁
+                    for (let y = 0; y < this.maze.length; y++) {
+                        for (let x = 0; x < this.maze[0].length; x++) {
+                            const cell = this.maze[y][x];
+                            const cellX = x * this.cellSize;
+                            const cellY = y * this.cellSize;
+
+                            if (cell === 1) {
+                                this.ctx.fillStyle = '#000';
+                                this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
+                            }
+                        }
+                    }
+                    
+                    // 绘制面包屑轨迹
+                    if (this.breadcrumbs.length > 1) {
+                        // 使用圆形笔刷绘制轨迹
+                        for (let i = 0; i < this.breadcrumbs.length; i++) {
+                            this.ctx.beginPath();
+                            this.ctx.arc(
+                                this.breadcrumbs[i].x,
+                                this.breadcrumbs[i].y,
+                                this.ball.radius * 2,
+                                0,
+                                Math.PI * 2
+                            );
+                            this.ctx.fillStyle = '#fff';
+                            this.ctx.fill();
+                        }
+                    }
+
+                    // 创建当前位置的可见区域（只影响地面）
+                    this.ctx.save();
+                    this.ctx.globalCompositeOperation = 'destination-out';
+                    this.ctx.fillStyle = '#000';
+                    this.ctx.beginPath();
+                    this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 2, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.restore();
+
+                    // 最后绘制终点圆圈，确保始终可见
+                    for (let y = 0; y < this.maze.length; y++) {
+                        for (let x = 0; x < this.maze[0].length; x++) {
+                            if (this.maze[y][x] === 3) {
+                                const cellX = x * this.cellSize;
+                                const cellY = y * this.cellSize;
+                                this.ctx.beginPath();
+                                this.ctx.strokeStyle = '#fff';  // 改为白色以便在黑暗中更容易看见
+                                this.ctx.lineWidth = 2;
+                                const radius = this.cellSize * 0.3;
+                                this.ctx.arc(
+                                    cellX + this.cellSize / 2,
+                                    cellY + this.cellSize / 2,
+                                    radius,
+                                    0,
+                                    Math.PI * 2
+                                );
+                                this.ctx.stroke();
+                            }
+                        }
+                    }
                 } else if (this.currentSpecialLevel === 'lightning') {
                     const currentTime = Date.now();
                     if (currentTime - this.lightningTimer > this.nextLightning) {
@@ -503,33 +600,88 @@ class MazeGame {
                         this.nextLightning = this.getRandomLightningInterval();
                     }
 
-                    if (!(currentTime - this.lightningTimer < this.lightningDuration)) {
-                        // 黑暗效果
-                        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+                    if (currentTime - this.lightningTimer < this.lightningDuration) {
+                        // 闪电效果，整个迷宫可见
+                    } else {
+                        // 黑暗效果，仅小球周围有微弱光
+                        this.ctx.fillStyle = '#000';
                         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-                        // 微弱光效果
                         this.ctx.save();
-                        this.ctx.globalCompositeOperation = 'destination-out';
                         this.ctx.beginPath();
-                        this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 2, 0, Math.PI * 2);
-                        this.ctx.fill();
-                        this.ctx.restore();
+                        this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 0.5, 0, Math.PI * 2); // 微弱光
+                        this.ctx.clip();
                     }
-                } else if (this.currentSpecialLevel === 'breadcrumb') {
-                    // 添加黑色遮罩
-                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-                    
-                    // 绘制面包屑轨迹
-                    this.ctx.save();
-                    this.ctx.globalCompositeOperation = 'destination-out';
-                    for (const crumb of this.breadcrumbs) {
+                } else if (this.currentSpecialLevel === 'key') {
+                    // 如果还没获得钥匙，绘制钥匙
+                    if (!this.hasKey) {
+                        this.ctx.fillStyle = '#000';  // 改为黑色
+                        this.ctx.lineWidth = 2;
+                        
+                        // 绘制钥匙头部（圆圈）
                         this.ctx.beginPath();
-                        this.ctx.arc(crumb.x, crumb.y, this.ball.radius * 2, 0, Math.PI * 2);
-                        this.ctx.fill();
+                        this.ctx.arc(this.keyPosition.x, this.keyPosition.y - 5, 5, 0, Math.PI * 2);
+                        this.ctx.stroke();  // 改用描边而不是填充
+                        
+                        // 绘制钥匙柄（竖线）
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(this.keyPosition.x, this.keyPosition.y - 2);
+                        this.ctx.lineTo(this.keyPosition.x, this.keyPosition.y + 8);
+                        this.ctx.stroke();
+                        
+                        // 绘制钥匙齿（两根横线）
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(this.keyPosition.x, this.keyPosition.y + 8);
+                        this.ctx.lineTo(this.keyPosition.x + 6, this.keyPosition.y + 8);
+                        this.ctx.moveTo(this.keyPosition.x, this.keyPosition.y + 6);
+                        this.ctx.lineTo(this.keyPosition.x + 4, this.keyPosition.y + 6);
+                        this.ctx.stroke();
                     }
-                    this.ctx.restore();
+
+                    // 绘制终点圆圈
+                    for (let y = 0; y < this.maze.length; y++) {
+                        for (let x = 0; x < this.maze[0].length; x++) {
+                            if (this.maze[y][x] === 3) {
+                                const cellX = x * this.cellSize;
+                                const cellY = y * this.cellSize;
+                                this.ctx.beginPath();
+                                this.ctx.strokeStyle = '#000';  // 保持普通模式的黑色
+                                this.ctx.lineWidth = 2;
+                                const radius = this.cellSize * 0.3;
+                                this.ctx.arc(
+                                    cellX + this.cellSize / 2,
+                                    cellY + this.cellSize / 2,
+                                    radius,
+                                    0,
+                                    Math.PI * 2
+                                );
+                                this.ctx.stroke();
+                            }
+                        }
+                    }
+                } else if (this.currentSpecialLevel === 'fakeExit') {
+                    const cellX = this.fakeExitPosition.x * this.cellSize;
+                    const cellY = this.fakeExitPosition.y * this.cellSize;
+                    this.ctx.beginPath();
+                    this.ctx.strokeStyle = '#000';
+                    this.ctx.lineWidth = 2;
+                    const radius = this.cellSize * 0.3;
+                    this.ctx.arc(
+                        cellX + this.cellSize / 2,
+                        cellY + this.cellSize / 2,
+                        radius,
+                        0,
+                        Math.PI * 2
+                    );
+                    this.ctx.stroke();
                 }
+            }
+        } else {
+            // 普通关卡
+            this.drawMaze();
+            this.drawBall();
+            this.drawExit();
+            if (this.currentSpecialLevel === 'key' && !this.hasKey) {
+                this.drawKey();
             }
         }
 
@@ -537,63 +689,26 @@ class MazeGame {
         this.drawLevelInfo();
     }
 
-    drawMaze() {
-        // 绘制迷宫墙壁和通道
-        for (let y = 0; y < this.maze.length; y++) {
-            for (let x = 0; x < this.maze[0].length; x++) {
-                const cell = this.maze[y][x];
-                const cellX = x * this.cellSize;
-                const cellY = y * this.cellSize;
-
-                if (cell === 1) {
-                    this.ctx.fillStyle = '#000';
-                    this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
-                }
-            }
-        }
-    }
-
-    drawBall() {
-        this.ctx.beginPath();
-        this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius, 0, Math.PI * 2);
-        this.ctx.fillStyle = '#000';
-        this.ctx.fill();
-    }
-
-    drawExit() {
-        const cellX = this.endX * this.cellSize;
-        const cellY = this.endY * this.cellSize;
-        this.ctx.beginPath();
-        this.ctx.strokeStyle = '#000';
-        this.ctx.lineWidth = 2;
-        const radius = this.cellSize * 0.3;
-        this.ctx.arc(
-            cellX + this.cellSize / 2,
-            cellY + this.cellSize / 2,
-            radius,
-            0,
-            Math.PI * 2
-        );
-        this.ctx.stroke();
-    }
-
     gameLoop() {
-        if (!this.isPlaying) return;
-
         // 更新倒计时
         if (this.gameMode === 'challenge' && !this.isGameOver) {
             const currentTime = Date.now();
-            // 如果时间停止技能未激活，才减少时间
-            if (!this.activeSkillEffects.timeStopActive) {
-                this.timeLeft -= currentTime - this.lastUpdateTime;
+            if (this.lastUpdateTime) {
+                // 如果时间停止技能未激活，才减少时间
+                if (!this.activeSkillEffects.timeStopActive) {
+                    this.timeLeft -= currentTime - this.lastUpdateTime;
+                }
+                if (this.timeLeft <= 0) {
+                    this.gameOver();
+                    return;
+                }
+                this.updateCountdown();
             }
-            if (this.timeLeft <= 0) {
-                this.gameOver();
-                return;
-            }
-            this.updateCountdown();
+            this.lastUpdateTime = currentTime;
         }
 
+        if (!this.isPlaying) return;
+        
         // 更新物理状态
         this.update();
         // 绘制画面
@@ -951,7 +1066,8 @@ class MazeGame {
 
     drawSkillIcon(container, skill) {
         const canvas = document.createElement('canvas');
-        const size = container.clientWidth || 60;
+        // 使用容器的实际尺寸
+        const size = container.clientWidth || 60; // 如果容器尺寸未定义，使用默认值60
         canvas.width = size;
         canvas.height = size;
         const ctx = canvas.getContext('2d');
@@ -959,11 +1075,12 @@ class MazeGame {
         ctx.strokeStyle = '#000';
         ctx.lineWidth = 2;
         
-        if (!skill || !skill.id) return;
+        // 根据技能类型绘制不同的图标
+        if (!skill || !skill.id) return;  // 添加安全检查
         
+        // 清除画布
         ctx.clearRect(0, 0, size, size);
         
-        // 绘制技能图标
         switch(skill.id) {
             case 'wallPass':
                 // 三个箭头穿过平行四边形
@@ -1051,17 +1168,10 @@ class MazeGame {
                 break;
         }
         
-        // 如果是主动技能，添加剩余次数
-        if (skill.type === 'active' && typeof skill.uses === 'number') {
-            ctx.fillStyle = '#000';
-            ctx.font = `${size * 0.3}px Arial`;  // 字体大小为图标尺寸的30%
-            ctx.textAlign = 'right';
-            ctx.textBaseline = 'bottom';
-            ctx.fillText(skill.uses.toString(), size - 5, size - 5);  // 在右下角绘制次数
-        }
-        
+        // 清除容器中的现有内容
         container.innerHTML = '';
         container.appendChild(canvas);
+        // 确保canvas填满容器
         canvas.style.width = '100%';
         canvas.style.height = '100%';
     }
@@ -1205,7 +1315,7 @@ class MazeGame {
     getDistanceToExit(x, y) {
         const exitX = (this.endX + 0.5) * this.cellSize;
         const exitY = (this.endY + 0.5) * this.cellSize;
-        return Math.sqrt((x - exitX) * (x - exitX) + (y - exitY) * (y - exitY);
+        return Math.sqrt((x - exitX) * (x - exitX) + (y - exitY) * (y - exitY));
     }
 
     // 辅助方法：获取随机空白格子
