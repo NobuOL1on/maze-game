@@ -381,7 +381,6 @@ class MazeGame {
                 this.activeSkillEffects.timeStopRemaining -= deltaTime;
                 if (this.activeSkillEffects.timeStopRemaining <= 0) {
                     this.activeSkillEffects.timeStopActive = false;
-                    this.lastUpdateTime = Date.now();  // 重置时间戳，避免累积延迟
                 }
             }
             
@@ -745,14 +744,15 @@ class MazeGame {
                 // 如果时间停止技能未激活，才减少时间
                 if (!this.activeSkillEffects.timeStopActive) {
                     this.timeLeft -= currentTime - this.lastUpdateTime;
+                    this.lastUpdateTime = currentTime;  // 只在实际扣除时间时更新lastUpdateTime
                 }
+                // 检查游戏结束条件
                 if (this.timeLeft <= 0) {
                     this.gameOver();
                     return;
                 }
                 this.updateCountdown();
             }
-            this.lastUpdateTime = currentTime;
         }
 
         if (!this.isPlaying) return;
@@ -1350,7 +1350,6 @@ class MazeGame {
     useTimeStop() {
         this.activeSkillEffects.timeStopActive = true;
         this.activeSkillEffects.timeStopRemaining = 5000; // 5秒
-        this.lastUpdateTime = Date.now();  // 重置时间戳，确保准确的计时
     }
 
     useGlobalLight() {
