@@ -387,11 +387,12 @@ class MazeGame {
             
             // 更新全局照明效果
             if (this.activeSkillEffects.globalLightActive) {
-                // 使用固定的时间间隔来更新
                 const deltaTime = 16; // 约60fps
                 this.activeSkillEffects.globalLightRemaining -= deltaTime;
                 if (this.activeSkillEffects.globalLightRemaining <= 0) {
                     this.activeSkillEffects.globalLightActive = false;
+                    // 添加视觉反馈
+                    this.showEffectEndIndicator();
                 }
             }
         }
@@ -1356,8 +1357,32 @@ class MazeGame {
     }
 
     useGlobalLight() {
+        // 检查是否在可用的特殊关卡中
+        if (!['fog', 'lightning', 'breadcrumb'].includes(this.currentSpecialLevel)) {
+            return false;  // 如果不在特殊关卡中，不允许使用
+        }
+        
         this.activeSkillEffects.globalLightActive = true;
         this.activeSkillEffects.globalLightRemaining = 5000; // 5秒
+        
+        // 添加视觉反馈
+        const flash = document.createElement('div');
+        flash.style.position = 'absolute';
+        flash.style.top = '0';
+        flash.style.left = '0';
+        flash.style.width = '100%';
+        flash.style.height = '100%';
+        flash.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+        flash.style.transition = 'opacity 0.3s';
+        document.getElementById('game-container').appendChild(flash);
+        
+        // 淡出效果
+        setTimeout(() => {
+            flash.style.opacity = '0';
+            setTimeout(() => flash.remove(), 300);
+        }, 100);
+        
+        return true;  // 技能使用成功
     }
 
     useTeleport() {
@@ -1439,6 +1464,26 @@ class MazeGame {
         // 重置游戏状态
         this.isPlaying = false;
         this.resetGameState();
+    }
+
+    showEffectEndIndicator() {
+        const indicator = document.createElement('div');
+        indicator.style.position = 'absolute';
+        indicator.style.top = '50%';
+        indicator.style.left = '50%';
+        indicator.style.transform = 'translate(-50%, -50%)';
+        indicator.style.padding = '10px';
+        indicator.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        indicator.style.color = 'white';
+        indicator.style.borderRadius = '5px';
+        indicator.textContent = 'Light Effect Ended';
+        document.getElementById('game-container').appendChild(indicator);
+        
+        setTimeout(() => {
+            indicator.style.opacity = '0';
+            indicator.style.transition = 'opacity 0.3s';
+            setTimeout(() => indicator.remove(), 300);
+        }, 1000);
     }
 }
 
