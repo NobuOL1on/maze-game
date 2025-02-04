@@ -83,8 +83,8 @@ class MazeGame {
         this.levelTimes = []; // 记录每个关卡的通关时间
 
         // 添加面包屑轨迹存储
-        this.breadcrumbs = new Set();
-        this.lastBreadcrumbPosition = { x: 0, y: 0 };  // 记录上一个面包屑位置
+        this.breadcrumbs = [];  // 改为数组存储实际坐标
+        this.lastBreadcrumbPosition = { x: 0, y: 0 };
 
         this.init();
     }
@@ -256,18 +256,14 @@ class MazeGame {
 
         // 记录面包屑
         if (this.currentSpecialLevel === 'breadcrumb') {
-            const cellX = Math.floor(this.ball.x / this.cellSize);
-            const cellY = Math.floor(this.ball.y / this.cellSize);
-            
-            // 计算与上一个面包屑位置的距离
-            const dx = cellX - this.lastBreadcrumbPosition.x;
-            const dy = cellY - this.lastBreadcrumbPosition.y;
+            const dx = this.ball.x - this.lastBreadcrumbPosition.x;
+            const dy = this.ball.y - this.lastBreadcrumbPosition.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             
-            // 只有当移动距离超过1个单元格时才记录新的面包屑
-            if (distance >= 1) {
-                this.breadcrumbs.add(`${cellX},${cellY}`);
-                this.lastBreadcrumbPosition = { x: cellX, y: cellY };
+            // 每移动5像素记录一个点
+            if (distance >= 5) {
+                this.breadcrumbs.push({ x: this.ball.x, y: this.ball.y });
+                this.lastBreadcrumbPosition = { x: this.ball.x, y: this.ball.y };
             }
         }
     }
@@ -288,25 +284,22 @@ class MazeGame {
             this.ctx.fillStyle = '#000';
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
             
-            // 先绘制所有面包屑位置为白色地面
-            this.breadcrumbs.forEach(crumb => {
-                const [x, y] = crumb.split(',').map(Number);
-                this.ctx.fillStyle = '#fff';
-                this.ctx.fillRect(
-                    x * this.cellSize,
-                    y * this.cellSize,
-                    this.cellSize,
-                    this.cellSize
-                );
-            });
+            // 绘制面包屑轨迹
+            if (this.breadcrumbs.length > 1) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.breadcrumbs[0].x, this.breadcrumbs[0].y);
+                for (let i = 1; i < this.breadcrumbs.length; i++) {
+                    this.ctx.lineTo(this.breadcrumbs[i].x, this.breadcrumbs[i].y);
+                }
+                this.ctx.strokeStyle = '#fff';
+                this.ctx.lineWidth = this.ball.radius * 4;  // 轨迹宽度为小球直径的2倍
+                this.ctx.stroke();
+            }
 
             // 创建当前位置的可见区域
             this.ctx.save();
             this.ctx.beginPath();
-            
-            // 添加当前小球位置的可见区域
             this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 2, 0, Math.PI * 2);
-            
             this.ctx.clip();
         } else if (this.currentSpecialLevel === 'lightning') {
             const currentTime = Date.now();
@@ -420,11 +413,11 @@ class MazeGame {
         }
 
         // 重置面包屑
-        this.breadcrumbs.clear();
+        this.breadcrumbs = [];
         // 重置最后面包屑位置
         this.lastBreadcrumbPosition = {
-            x: Math.floor(this.ball.x / this.cellSize),
-            y: Math.floor(this.ball.y / this.cellSize)
+            x: this.ball.x,
+            y: this.ball.y
         };
 
         // 调整画布大小
