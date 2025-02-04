@@ -106,12 +106,12 @@ class MazeGame {
         this.skills = {
             // 主动技能
             wallPass: {
+                id: 'wallPass',
                 type: 'active',
                 name: 'Wall Pass',
                 uses: 3,
-                icon: '➡️',  // 临时图标，后续会替换为自定义绘制
-                description: 'Pass through walls in the direction of gravity',
-                effect: () => this.useWallPass()
+                icon: '➡️',
+                effect: this.useWallPass.bind(this)
             },
             timeStop: {
                 type: 'active',
@@ -374,10 +374,11 @@ class MazeGame {
         // 更新主动技能效果
         if (this.gameMode === 'challenge') {
             const currentTime = Date.now();
+            const deltaTime = currentTime - this.lastUpdateTime;
             
             // 更新时间停止效果
             if (this.activeSkillEffects.timeStopActive) {
-                this.activeSkillEffects.timeStopRemaining -= currentTime - this.lastUpdateTime;
+                this.activeSkillEffects.timeStopRemaining -= deltaTime;
                 if (this.activeSkillEffects.timeStopRemaining <= 0) {
                     this.activeSkillEffects.timeStopActive = false;
                 }
@@ -385,7 +386,7 @@ class MazeGame {
             
             // 更新全局照明效果
             if (this.activeSkillEffects.globalLightActive) {
-                this.activeSkillEffects.globalLightRemaining -= currentTime - this.lastUpdateTime;
+                this.activeSkillEffects.globalLightRemaining -= deltaTime;
                 if (this.activeSkillEffects.globalLightRemaining <= 0) {
                     this.activeSkillEffects.globalLightActive = false;
                 }
@@ -1372,18 +1373,15 @@ class MazeGame {
     }
 
     applySpeedBoost() {
-        // 实现Speed Boost技能的效果
-        console.log("Speed Boost skill effect should be applied here");
+        // 已经在update方法中实现了，这个方法可以删除
     }
 
     applyTimeBoots() {
-        // 实现Time Boots技能的效果
-        console.log("Time Boots skill effect should be applied here");
+        // 已经在update方法中实现了，这个方法可以删除
     }
 
     applyCornerSlow() {
-        // 实现Corner Slow技能的效果
-        console.log("Corner Slow skill effect should be applied here");
+        // 已经在update方法中实现了，这个方法可以删除
     }
 
     hasPassiveSkill(skillId) {
