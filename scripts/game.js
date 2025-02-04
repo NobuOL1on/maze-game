@@ -374,10 +374,11 @@ class MazeGame {
         // 更新主动技能效果
         if (this.gameMode === 'challenge') {
             const currentTime = Date.now();
-            const deltaTime = currentTime - this.lastUpdateTime;
             
             // 更新时间停止效果
             if (this.activeSkillEffects.timeStopActive) {
+                // 使用固定的时间间隔来更新
+                const deltaTime = 16; // 约60fps
                 this.activeSkillEffects.timeStopRemaining -= deltaTime;
                 if (this.activeSkillEffects.timeStopRemaining <= 0) {
                     this.activeSkillEffects.timeStopActive = false;
@@ -386,6 +387,8 @@ class MazeGame {
             
             // 更新全局照明效果
             if (this.activeSkillEffects.globalLightActive) {
+                // 使用固定的时间间隔来更新
+                const deltaTime = 16; // 约60fps
                 this.activeSkillEffects.globalLightRemaining -= deltaTime;
                 if (this.activeSkillEffects.globalLightRemaining <= 0) {
                     this.activeSkillEffects.globalLightActive = false;
