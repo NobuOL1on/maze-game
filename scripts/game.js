@@ -313,14 +313,19 @@ class MazeGame {
             
             // 绘制面包屑轨迹
             if (this.breadcrumbs.length > 1) {
-                this.ctx.beginPath();
-                this.ctx.moveTo(this.breadcrumbs[0].x, this.breadcrumbs[0].y);
-                for (let i = 1; i < this.breadcrumbs.length; i++) {
-                    this.ctx.lineTo(this.breadcrumbs[i].x, this.breadcrumbs[i].y);
+                // 使用圆形笔刷绘制轨迹
+                for (let i = 0; i < this.breadcrumbs.length; i++) {
+                    this.ctx.beginPath();
+                    this.ctx.arc(
+                        this.breadcrumbs[i].x,
+                        this.breadcrumbs[i].y,
+                        this.ball.radius * 2,  // 使用和视野范围相同的半径
+                        0,
+                        Math.PI * 2
+                    );
+                    this.ctx.fillStyle = '#fff';
+                    this.ctx.fill();
                 }
-                this.ctx.strokeStyle = '#fff';
-                this.ctx.lineWidth = this.ball.radius * 4;  // 轨迹宽度为小球直径的2倍
-                this.ctx.stroke();
             }
 
             // 创建当前位置的可见区域（只影响地面）
