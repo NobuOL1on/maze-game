@@ -489,6 +489,24 @@ class MazeGame {
             this.ctx.stroke();
         }
 
+        // 如果是假出口关卡，绘制假出口
+        if (this.currentSpecialLevel === 'fakeExit') {
+            const cellX = this.fakeExitPosition.x * this.cellSize;
+            const cellY = this.fakeExitPosition.y * this.cellSize;
+            this.ctx.beginPath();
+            this.ctx.strokeStyle = '#000';
+            this.ctx.lineWidth = 2;
+            const radius = this.cellSize * 0.3;
+            this.ctx.arc(
+                cellX + this.cellSize / 2,
+                cellY + this.cellSize / 2,
+                radius,
+                0,
+                Math.PI * 2
+            );
+            this.ctx.stroke();
+        }
+
         // 处理特殊关卡效果
         if (this.currentSpecialLevel === 'fog' || 
             this.currentSpecialLevel === 'lightning' || 
@@ -652,21 +670,6 @@ class MazeGame {
                             }
                         }
                     }
-                } else if (this.currentSpecialLevel === 'fakeExit') {
-                    const cellX = this.fakeExitPosition.x * this.cellSize;
-                    const cellY = this.fakeExitPosition.y * this.cellSize;
-                    this.ctx.beginPath();
-                    this.ctx.strokeStyle = '#000';
-                    this.ctx.lineWidth = 2;
-                    const radius = this.cellSize * 0.3;
-                    this.ctx.arc(
-                        cellX + this.cellSize / 2,
-                        cellY + this.cellSize / 2,
-                        radius,
-                        0,
-                        Math.PI * 2
-                    );
-                    this.ctx.stroke();
                 }
             }
         }
