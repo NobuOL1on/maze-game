@@ -598,9 +598,12 @@ class MazeGame {
         alert(`Game Over! You reached Level ${this.level}`);
         // 返回开始界面
         this.startPage.style.display = 'flex';
+        this.startGameButton.style.display = 'block';
         this.modeSelect.style.display = 'none';
         document.getElementById('game-container').style.display = 'none';
         this.countdownContainer.style.display = 'none';
+        // 重置游戏状态
+        this.resetGameState();
     }
 
     calculateRewardTime() {
@@ -608,7 +611,7 @@ class MazeGame {
         const tier = Math.floor((this.level - 1) / 10);
         
         // 计算基础奖励时间A
-        let baseReward = 10; // 初始10秒
+        let baseReward = 8; // 初始8秒
         for (let i = 0; i < tier; i++) {
             baseReward *= 1.1; // 每层级增加10%
         }
