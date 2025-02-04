@@ -29,6 +29,7 @@ class MazeGame {
         this.pauseButton = document.getElementById('pauseButton');
         this.permissionPrompt = document.getElementById('permission-prompt');
         this.permitButton = document.getElementById('permitButton');
+        this.backButton = document.getElementById('backButton');
         
         // 清除可能存在的无效数据
         this.clearInvalidData();
@@ -101,6 +102,78 @@ class MazeGame {
         this.lastUpdateTime = null;  // 用于计算时间差
         this.isGameOver = false;     // 游戏是否结束
 
+        // 技能系统
+        this.skills = {
+            // 主动技能
+            wallPass: {
+                type: 'active',
+                name: 'Wall Pass',
+                uses: 3,
+                icon: '➡️',  // 临时图标，后续会替换为自定义绘制
+                description: 'Pass through walls in the direction of gravity',
+                effect: () => this.useWallPass()
+            },
+            timeStop: {
+                type: 'active',
+                name: 'Time Stop',
+                uses: 3,
+                icon: '⏸️',
+                description: 'Stop countdown for 5 seconds',
+                effect: () => this.useTimeStop()
+            },
+            globalLight: {
+                type: 'active',
+                name: 'Global Light',
+                uses: 3,
+                icon: '💡',
+                description: 'Light up the entire maze for 5 seconds',
+                effect: () => this.useGlobalLight()
+            },
+            teleport: {
+                type: 'active',
+                name: 'Teleport',
+                uses: 3,
+                icon: '🔄',
+                description: 'Teleport closer to the exit',
+                effect: () => this.useTeleport()
+            },
+            // 被动技能
+            speedBoost: {
+                type: 'passive',
+                name: 'Speed Boost',
+                icon: '⚡',
+                description: 'Increase movement speed by 5%',
+                effect: () => this.applySpeedBoost()
+            },
+            timeBoots: {
+                type: 'passive',
+                name: 'Time Boots',
+                icon: '⏱️',
+                description: 'Gain 0.1s for each cell moved',
+                effect: () => this.applyTimeBoots()
+            },
+            cornerSlow: {
+                type: 'passive',
+                name: 'Corner Slow',
+                icon: '✚',
+                description: 'Slow down by 10% at intersections',
+                effect: () => this.applyCornerSlow()
+            }
+        };
+        
+        // 技能槽
+        this.skillSlots = [null, null];
+        this.activeSkillEffects = {
+            timeStopActive: false,
+            globalLightActive: false,
+            timeStopRemaining: 0,
+            globalLightRemaining: 0
+        };
+        
+        // 技能选择相关
+        this.skillSelectionLevel = 6; // 每6关触发技能选择
+        this.skillSelectionActive = false;
+
         this.init();
     }
 
@@ -130,6 +203,15 @@ class MazeGame {
             console.error('DeviceOrientation initialization error:', error);
             this.showCompatibilityWarning();
         }
+
+        // 绑定技能槽点击事件
+        const slots = document.getElementsByClassName('skill-slot');
+        Array.from(slots).forEach((slot, index) => {
+            slot.addEventListener('click', () => this.useSkill(index));
+        });
+
+        // 绑定返回按钮事件
+        this.backButton.addEventListener('click', () => this.confirmBack());
     }
 
     async requestPermission() {
@@ -172,6 +254,13 @@ class MazeGame {
         this.canvas.style.display = 'block';
         document.getElementById('startButton').style.display = 'none';
         
+        // 在无限模式下显示返回按钮
+        if (mode === 'infinite') {
+            this.backButton.style.display = 'block';
+        } else {
+            this.backButton.style.display = 'none';
+        }
+        
         // 重置游戏状态
         this.resetGameState();
         this.resizeCanvas();
@@ -181,11 +270,13 @@ class MazeGame {
         
         if (mode === 'challenge') {
             this.countdownContainer.style.display = 'block';
+            document.getElementById('skillSlots').style.display = 'block';
             this.timeLeft = 30000; // 30秒
             this.lastUpdateTime = Date.now();
             this.updateCountdown();
         } else {
             this.countdownContainer.style.display = 'none';
+            document.getElementById('skillSlots').style.display = 'none';
         }
         
         this.startTime = Date.now();
@@ -280,6 +371,58 @@ class MazeGame {
             }
         }
 
+        // 更新主动技能效果
+        if (this.gameMode === 'challenge') {
+            const currentTime = Date.now();
+            
+            // 更新时间停止效果
+            if (this.activeSkillEffects.timeStopActive) {
+                this.activeSkillEffects.timeStopRemaining -= currentTime - this.lastUpdateTime;
+                if (this.activeSkillEffects.timeStopRemaining <= 0) {
+                    this.activeSkillEffects.timeStopActive = false;
+                }
+            }
+            
+            // 更新全局照明效果
+            if (this.activeSkillEffects.globalLightActive) {
+                this.activeSkillEffects.globalLightRemaining -= currentTime - this.lastUpdateTime;
+                if (this.activeSkillEffects.globalLightRemaining <= 0) {
+                    this.activeSkillEffects.globalLightActive = false;
+                }
+            }
+        }
+
+        // 应用被动技能效果
+        let speedMultiplier = 1;
+        
+        // 应用加速效果
+        if (this.hasPassiveSkill('speedBoost')) {
+            speedMultiplier *= 1.05;  // 增加5%速度
+        }
+        
+        // 应用转角减速效果
+        if (this.hasPassiveSkill('cornerSlow')) {
+            const cellX = Math.floor(this.ball.x / this.cellSize);
+            const cellY = Math.floor(this.ball.y / this.cellSize);
+            if (this.isIntersection(cellX, cellY)) {
+                speedMultiplier *= 0.9;  // 减少10%速度
+            }
+        }
+        
+        // 应用时间靴子效果
+        if (this.hasPassiveSkill('timeBoots')) {
+            const newCellX = Math.floor(this.ball.x / this.cellSize);
+            const newCellY = Math.floor(this.ball.y / this.cellSize);
+            if (newCellX !== this.lastCell?.x || newCellY !== this.lastCell?.y) {
+                this.timeLeft += 100; // 增加0.1秒
+                this.lastCell = { x: newCellX, y: newCellY };
+            }
+        }
+        
+        // 应用速度修改
+        this.ball.velocity.x *= speedMultiplier;
+        this.ball.velocity.y *= speedMultiplier;
+
         // 更新位置
         this.ball.x += this.ball.velocity.x;
         this.ball.y += this.ball.velocity.y;
@@ -320,200 +463,211 @@ class MazeGame {
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // 应用特殊关卡效果
-        if (this.currentSpecialLevel === 'fog') {
-            this.ctx.fillStyle = '#000';
-            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            
-            // 先绘制墙壁
-            for (let y = 0; y < this.maze.length; y++) {
-                for (let x = 0; x < this.maze[0].length; x++) {
-                    const cell = this.maze[y][x];
-                    const cellX = x * this.cellSize;
-                    const cellY = y * this.cellSize;
+        // 处理特殊关卡效果
+        if (this.currentSpecialLevel === 'fog' || 
+            this.currentSpecialLevel === 'lightning' || 
+            this.currentSpecialLevel === 'breadcrumb') {
+            // 如果全局照明技能激活，则不应用特殊效果
+            if (this.activeSkillEffects.globalLightActive) {
+                // 绘制普通迷宫
+                this.drawNormalMaze();
+            } else {
+                // 应用特殊效果
+                if (this.currentSpecialLevel === 'fog') {
+                    this.ctx.fillStyle = '#000';
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                    
+                    // 先绘制墙壁
+                    for (let y = 0; y < this.maze.length; y++) {
+                        for (let x = 0; x < this.maze[0].length; x++) {
+                            const cell = this.maze[y][x];
+                            const cellX = x * this.cellSize;
+                            const cellY = y * this.cellSize;
 
-                    if (cell === 1) {
+                            if (cell === 1) {
+                                this.ctx.fillStyle = '#000';
+                                this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
+                            } else if (cell === 3) {
+                                this.ctx.beginPath();
+                                this.ctx.strokeStyle = '#000';
+                                this.ctx.lineWidth = 2;
+                                const radius = this.cellSize * 0.3;
+                                this.ctx.arc(
+                                    cellX + this.cellSize / 2,
+                                    cellY + this.cellSize / 2,
+                                    radius,
+                                    0,
+                                    Math.PI * 2
+                                );
+                                this.ctx.stroke();
+                            }
+                        }
+                    }
+                    
+                    // 创建可见区域
+                    this.ctx.save();
+                    this.ctx.globalCompositeOperation = 'destination-out';
+                    this.ctx.fillStyle = '#000';
+                    this.ctx.beginPath();
+                    this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 10, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.restore();
+                    
+                    // 在可见区域内绘制白色地面
+                    this.ctx.save();
+                    this.ctx.beginPath();
+                    this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 10, 0, Math.PI * 2);
+                    this.ctx.clip();
+                    this.ctx.fillStyle = '#fff';
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                } else if (this.currentSpecialLevel === 'breadcrumb') {
+                    // 绘制黑色背景
+                    this.ctx.fillStyle = '#000';
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                    
+                    // 先绘制墙壁
+                    for (let y = 0; y < this.maze.length; y++) {
+                        for (let x = 0; x < this.maze[0].length; x++) {
+                            const cell = this.maze[y][x];
+                            const cellX = x * this.cellSize;
+                            const cellY = y * this.cellSize;
+
+                            if (cell === 1) {
+                                this.ctx.fillStyle = '#000';
+                                this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
+                            }
+                        }
+                    }
+                    
+                    // 绘制面包屑轨迹
+                    if (this.breadcrumbs.length > 1) {
+                        // 使用圆形笔刷绘制轨迹
+                        for (let i = 0; i < this.breadcrumbs.length; i++) {
+                            this.ctx.beginPath();
+                            this.ctx.arc(
+                                this.breadcrumbs[i].x,
+                                this.breadcrumbs[i].y,
+                                this.ball.radius * 2,
+                                0,
+                                Math.PI * 2
+                            );
+                            this.ctx.fillStyle = '#fff';
+                            this.ctx.fill();
+                        }
+                    }
+
+                    // 创建当前位置的可见区域（只影响地面）
+                    this.ctx.save();
+                    this.ctx.globalCompositeOperation = 'destination-out';
+                    this.ctx.fillStyle = '#000';
+                    this.ctx.beginPath();
+                    this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 2, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.restore();
+
+                    // 最后绘制终点圆圈，确保始终可见
+                    for (let y = 0; y < this.maze.length; y++) {
+                        for (let x = 0; x < this.maze[0].length; x++) {
+                            if (this.maze[y][x] === 3) {
+                                const cellX = x * this.cellSize;
+                                const cellY = y * this.cellSize;
+                                this.ctx.beginPath();
+                                this.ctx.strokeStyle = '#fff';  // 改为白色以便在黑暗中更容易看见
+                                this.ctx.lineWidth = 2;
+                                const radius = this.cellSize * 0.3;
+                                this.ctx.arc(
+                                    cellX + this.cellSize / 2,
+                                    cellY + this.cellSize / 2,
+                                    radius,
+                                    0,
+                                    Math.PI * 2
+                                );
+                                this.ctx.stroke();
+                            }
+                        }
+                    }
+                } else if (this.currentSpecialLevel === 'lightning') {
+                    const currentTime = Date.now();
+                    if (currentTime - this.lightningTimer > this.nextLightning) {
+                        this.lightningTimer = currentTime;
+                        this.nextLightning = this.getRandomLightningInterval();
+                    }
+
+                    if (currentTime - this.lightningTimer < this.lightningDuration) {
+                        // 闪电效果，整个迷宫可见
+                    } else {
+                        // 黑暗效果，仅小球周围有微弱光
                         this.ctx.fillStyle = '#000';
-                        this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
-                    } else if (cell === 3) {
+                        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                        this.ctx.save();
                         this.ctx.beginPath();
-                        this.ctx.strokeStyle = '#000';
+                        this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 0.5, 0, Math.PI * 2); // 微弱光
+                        this.ctx.clip();
+                    }
+                } else if (this.currentSpecialLevel === 'key') {
+                    // 如果还没获得钥匙，绘制钥匙
+                    if (!this.hasKey) {
+                        this.ctx.fillStyle = '#000';  // 改为黑色
                         this.ctx.lineWidth = 2;
-                        const radius = this.cellSize * 0.3;
-                        this.ctx.arc(
-                            cellX + this.cellSize / 2,
-                            cellY + this.cellSize / 2,
-                            radius,
-                            0,
-                            Math.PI * 2
-                        );
+                        
+                        // 绘制钥匙头部（圆圈）
+                        this.ctx.beginPath();
+                        this.ctx.arc(this.keyPosition.x, this.keyPosition.y - 5, 5, 0, Math.PI * 2);
+                        this.ctx.stroke();  // 改用描边而不是填充
+                        
+                        // 绘制钥匙柄（竖线）
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(this.keyPosition.x, this.keyPosition.y - 2);
+                        this.ctx.lineTo(this.keyPosition.x, this.keyPosition.y + 8);
+                        this.ctx.stroke();
+                        
+                        // 绘制钥匙齿（两根横线）
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(this.keyPosition.x, this.keyPosition.y + 8);
+                        this.ctx.lineTo(this.keyPosition.x + 6, this.keyPosition.y + 8);
+                        this.ctx.moveTo(this.keyPosition.x, this.keyPosition.y + 6);
+                        this.ctx.lineTo(this.keyPosition.x + 4, this.keyPosition.y + 6);
                         this.ctx.stroke();
                     }
-                }
-            }
-            
-            // 创建可见区域
-            this.ctx.save();
-            this.ctx.globalCompositeOperation = 'destination-out';
-            this.ctx.fillStyle = '#000';
-            this.ctx.beginPath();
-            this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 10, 0, Math.PI * 2);
-            this.ctx.fill();
-            this.ctx.restore();
-            
-            // 在可见区域内绘制白色地面
-            this.ctx.save();
-            this.ctx.beginPath();
-            this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 10, 0, Math.PI * 2);
-            this.ctx.clip();
-            this.ctx.fillStyle = '#fff';
-            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        } else if (this.currentSpecialLevel === 'breadcrumb') {
-            // 绘制黑色背景
-            this.ctx.fillStyle = '#000';
-            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            
-            // 先绘制墙壁
-            for (let y = 0; y < this.maze.length; y++) {
-                for (let x = 0; x < this.maze[0].length; x++) {
-                    const cell = this.maze[y][x];
-                    const cellX = x * this.cellSize;
-                    const cellY = y * this.cellSize;
 
-                    if (cell === 1) {
-                        this.ctx.fillStyle = '#000';
-                        this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
+                    // 绘制终点圆圈
+                    for (let y = 0; y < this.maze.length; y++) {
+                        for (let x = 0; x < this.maze[0].length; x++) {
+                            if (this.maze[y][x] === 3) {
+                                const cellX = x * this.cellSize;
+                                const cellY = y * this.cellSize;
+                                this.ctx.beginPath();
+                                this.ctx.strokeStyle = '#000';  // 保持普通模式的黑色
+                                this.ctx.lineWidth = 2;
+                                const radius = this.cellSize * 0.3;
+                                this.ctx.arc(
+                                    cellX + this.cellSize / 2,
+                                    cellY + this.cellSize / 2,
+                                    radius,
+                                    0,
+                                    Math.PI * 2
+                                );
+                                this.ctx.stroke();
+                            }
+                        }
                     }
-                }
-            }
-            
-            // 绘制面包屑轨迹
-            if (this.breadcrumbs.length > 1) {
-                // 使用圆形笔刷绘制轨迹
-                for (let i = 0; i < this.breadcrumbs.length; i++) {
+                } else if (this.currentSpecialLevel === 'fakeExit') {
+                    const cellX = this.fakeExitPosition.x * this.cellSize;
+                    const cellY = this.fakeExitPosition.y * this.cellSize;
                     this.ctx.beginPath();
+                    this.ctx.strokeStyle = '#000';
+                    this.ctx.lineWidth = 2;
+                    const radius = this.cellSize * 0.3;
                     this.ctx.arc(
-                        this.breadcrumbs[i].x,
-                        this.breadcrumbs[i].y,
-                        this.ball.radius * 2,
+                        cellX + this.cellSize / 2,
+                        cellY + this.cellSize / 2,
+                        radius,
                         0,
                         Math.PI * 2
                     );
-                    this.ctx.fillStyle = '#fff';
-                    this.ctx.fill();
+                    this.ctx.stroke();
                 }
             }
-
-            // 创建当前位置的可见区域（只影响地面）
-            this.ctx.save();
-            this.ctx.globalCompositeOperation = 'destination-out';
-            this.ctx.fillStyle = '#000';
-            this.ctx.beginPath();
-            this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 2, 0, Math.PI * 2);
-            this.ctx.fill();
-            this.ctx.restore();
-
-            // 最后绘制终点圆圈，确保始终可见
-            for (let y = 0; y < this.maze.length; y++) {
-                for (let x = 0; x < this.maze[0].length; x++) {
-                    if (this.maze[y][x] === 3) {
-                        const cellX = x * this.cellSize;
-                        const cellY = y * this.cellSize;
-                        this.ctx.beginPath();
-                        this.ctx.strokeStyle = '#fff';  // 改为白色以便在黑暗中更容易看见
-                        this.ctx.lineWidth = 2;
-                        const radius = this.cellSize * 0.3;
-                        this.ctx.arc(
-                            cellX + this.cellSize / 2,
-                            cellY + this.cellSize / 2,
-                            radius,
-                            0,
-                            Math.PI * 2
-                        );
-                        this.ctx.stroke();
-                    }
-                }
-            }
-        } else if (this.currentSpecialLevel === 'lightning') {
-            const currentTime = Date.now();
-            if (currentTime - this.lightningTimer > this.nextLightning) {
-                this.lightningTimer = currentTime;
-                this.nextLightning = this.getRandomLightningInterval();
-            }
-
-            if (currentTime - this.lightningTimer < this.lightningDuration) {
-                // 闪电效果，整个迷宫可见
-            } else {
-                // 黑暗效果，仅小球周围有微弱光
-                this.ctx.fillStyle = '#000';
-                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-                this.ctx.save();
-                this.ctx.beginPath();
-                this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 0.5, 0, Math.PI * 2); // 微弱光
-                this.ctx.clip();
-            }
-        } else if (this.currentSpecialLevel === 'key') {
-            // 如果还没获得钥匙，绘制钥匙
-            if (!this.hasKey) {
-                this.ctx.fillStyle = '#000';  // 改为黑色
-                this.ctx.lineWidth = 2;
-                
-                // 绘制钥匙头部（圆圈）
-                this.ctx.beginPath();
-                this.ctx.arc(this.keyPosition.x, this.keyPosition.y - 5, 5, 0, Math.PI * 2);
-                this.ctx.stroke();  // 改用描边而不是填充
-                
-                // 绘制钥匙柄（竖线）
-                this.ctx.beginPath();
-                this.ctx.moveTo(this.keyPosition.x, this.keyPosition.y - 2);
-                this.ctx.lineTo(this.keyPosition.x, this.keyPosition.y + 8);
-                this.ctx.stroke();
-                
-                // 绘制钥匙齿（两根横线）
-                this.ctx.beginPath();
-                this.ctx.moveTo(this.keyPosition.x, this.keyPosition.y + 8);
-                this.ctx.lineTo(this.keyPosition.x + 6, this.keyPosition.y + 8);
-                this.ctx.moveTo(this.keyPosition.x, this.keyPosition.y + 6);
-                this.ctx.lineTo(this.keyPosition.x + 4, this.keyPosition.y + 6);
-                this.ctx.stroke();
-            }
-
-            // 绘制终点圆圈
-            for (let y = 0; y < this.maze.length; y++) {
-                for (let x = 0; x < this.maze[0].length; x++) {
-                    if (this.maze[y][x] === 3) {
-                        const cellX = x * this.cellSize;
-                        const cellY = y * this.cellSize;
-                        this.ctx.beginPath();
-                        this.ctx.strokeStyle = '#000';  // 保持普通模式的黑色
-                        this.ctx.lineWidth = 2;
-                        const radius = this.cellSize * 0.3;
-                        this.ctx.arc(
-                            cellX + this.cellSize / 2,
-                            cellY + this.cellSize / 2,
-                            radius,
-                            0,
-                            Math.PI * 2
-                        );
-                        this.ctx.stroke();
-                    }
-                }
-            }
-        } else if (this.currentSpecialLevel === 'fakeExit') {
-            const cellX = this.fakeExitPosition.x * this.cellSize;
-            const cellY = this.fakeExitPosition.y * this.cellSize;
-            this.ctx.beginPath();
-            this.ctx.strokeStyle = '#000';
-            this.ctx.lineWidth = 2;
-            const radius = this.cellSize * 0.3;
-            this.ctx.arc(
-                cellX + this.cellSize / 2,
-                cellY + this.cellSize / 2,
-                radius,
-                0,
-                Math.PI * 2
-            );
-            this.ctx.stroke();
         }
 
         for (let y = 0; y < this.maze.length; y++) {
@@ -572,7 +726,10 @@ class MazeGame {
         if (this.gameMode === 'challenge' && !this.isGameOver) {
             const currentTime = Date.now();
             if (this.lastUpdateTime) {
-                this.timeLeft -= currentTime - this.lastUpdateTime;
+                // 如果时间停止技能未激活，才减少时间
+                if (!this.activeSkillEffects.timeStopActive) {
+                    this.timeLeft -= currentTime - this.lastUpdateTime;
+                }
                 if (this.timeLeft <= 0) {
                     this.gameOver();
                     return;
@@ -645,6 +802,8 @@ class MazeGame {
             const rewardTime = this.calculateRewardTime();
             this.timeLeft += rewardTime;
             this.updateCountdown();
+            // 检查是否需要触发技能选择
+            this.checkSkillSelection();
         }
 
         const timeTaken = (Date.now() - this.startTime) / 1000;
@@ -875,6 +1034,358 @@ class MazeGame {
             x: fakeX,
             y: fakeY
         };
+    }
+
+    // 检查是否需要触发技能选择
+    checkSkillSelection() {
+        if (this.gameMode === 'challenge' && this.level % this.skillSelectionLevel === 0) {
+            this.showSkillSelection();
+        }
+    }
+    
+    // 获取可选技能
+    getAvailableSkills() {
+        const availableSkills = [];
+        for (const [id, skill] of Object.entries(this.skills)) {
+            // 如果是被动技能且已装备，则跳过
+            if (skill.type === 'passive' && 
+                this.skillSlots.some(slot => slot && slot.name === skill.name)) {
+                continue;
+            }
+            availableSkills.push({...skill, id});
+        }
+        // 随机选择两个技能
+        return this.shuffleArray(availableSkills).slice(0, 2);
+    }
+    
+    // Fisher-Yates 洗牌算法
+    shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    showSkillSelection() {
+        this.skillSelectionActive = true;
+        this.isPlaying = false;  // 暂停游戏
+        
+        const skillSelection = document.getElementById('skillSelection');
+        const options = skillSelection.getElementsByClassName('skill-option');
+        const availableSkills = this.getAvailableSkills();
+        
+        // 更新两个技能选项
+        Array.from(options).forEach((option, index) => {
+            const skill = availableSkills[index];
+            const iconDiv = option.querySelector('.skill-icon');
+            const detailBtn = option.querySelector('.detail-btn');
+            const equipBtn = option.querySelector('.equip-btn');
+            
+            // 清除之前的内容
+            iconDiv.innerHTML = '';
+            
+            // 绘制技能图标
+            this.drawSkillIcon(iconDiv, skill);
+            
+            // 绑定按钮事件
+            detailBtn.onclick = () => this.showSkillDetail(skill);
+            equipBtn.onclick = () => this.equipSkill(skill);
+        });
+        
+        skillSelection.style.display = 'block';
+    }
+
+    drawSkillIcon(container, skill) {
+        const canvas = document.createElement('canvas');
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+        const ctx = canvas.getContext('2d');
+        
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        
+        // 根据技能类型绘制不同的图标
+        switch(skill.id) {
+            case 'wallPass':
+                // 三个箭头穿过平行四边形
+                const arrowWidth = canvas.width * 0.15;
+                const spacing = canvas.width * 0.2;
+                const y = canvas.height / 2;
+                
+                // 绘制平行四边形
+                ctx.beginPath();
+                ctx.moveTo(canvas.width * 0.2, canvas.height * 0.2);
+                ctx.lineTo(canvas.width * 0.8, canvas.height * 0.2);
+                ctx.lineTo(canvas.width * 0.7, canvas.height * 0.8);
+                ctx.lineTo(canvas.width * 0.1, canvas.height * 0.8);
+                ctx.closePath();
+                ctx.stroke();
+                
+                // 绘制三个箭头
+                for (let i = 0; i < 3; i++) {
+                    this.drawArrow(ctx, canvas.width * 0.3 + i * spacing, y, arrowWidth);
+                }
+                break;
+
+            case 'timeStop':
+                // 暂停符号
+                const barWidth = canvas.width * 0.15;
+                const barHeight = canvas.height * 0.4;
+                ctx.fillRect(canvas.width * 0.3, canvas.height * 0.3, barWidth, barHeight);
+                ctx.fillRect(canvas.width * 0.6, canvas.height * 0.3, barWidth, barHeight);
+                break;
+
+            case 'globalLight':
+                // 灯泡图案
+                ctx.beginPath();
+                // 灯泡底部
+                ctx.arc(canvas.width/2, canvas.height*0.4, canvas.width*0.25, 0, Math.PI*2);
+                // 灯泡螺纹
+                ctx.moveTo(canvas.width*0.4, canvas.height*0.65);
+                ctx.lineTo(canvas.width*0.6, canvas.height*0.65);
+                ctx.moveTo(canvas.width*0.42, canvas.height*0.7);
+                ctx.lineTo(canvas.width*0.58, canvas.height*0.7);
+                ctx.moveTo(canvas.width*0.45, canvas.height*0.75);
+                ctx.lineTo(canvas.width*0.55, canvas.height*0.75);
+                ctx.stroke();
+                break;
+
+            case 'teleport':
+                // 随机传送图标
+                const radius = canvas.width * 0.2;
+                ctx.beginPath();
+                ctx.arc(canvas.width/2, canvas.height/2, radius, 0, Math.PI*2);
+                // 添加箭头
+                this.drawArrow(ctx, canvas.width*0.3, canvas.height*0.3, radius, Math.PI*0.25);
+                this.drawArrow(ctx, canvas.width*0.7, canvas.height*0.7, radius, -Math.PI*0.75);
+                ctx.stroke();
+                break;
+
+            case 'speedBoost':
+                // 闪电图标
+                ctx.beginPath();
+                ctx.moveTo(canvas.width*0.6, canvas.height*0.2);
+                ctx.lineTo(canvas.width*0.4, canvas.height*0.5);
+                ctx.lineTo(canvas.width*0.5, canvas.height*0.5);
+                ctx.lineTo(canvas.width*0.3, canvas.height*0.8);
+                ctx.lineTo(canvas.width*0.7, canvas.height*0.5);
+                ctx.lineTo(canvas.width*0.5, canvas.height*0.5);
+                ctx.closePath();
+                ctx.fill();
+                break;
+
+            case 'timeBoots':
+                // 秒表图案
+                ctx.beginPath();
+                ctx.arc(canvas.width/2, canvas.height/2, canvas.width*0.3, 0, Math.PI*2);
+                // 指针
+                ctx.moveTo(canvas.width/2, canvas.height/2);
+                ctx.lineTo(canvas.width*0.7, canvas.height*0.5);
+                ctx.stroke();
+                break;
+
+            case 'cornerSlow':
+                // 十字路口图案
+                const roadWidth = canvas.width * 0.2;
+                ctx.strokeRect(canvas.width/2 - roadWidth/2, 0, roadWidth, canvas.height);
+                ctx.strokeRect(0, canvas.height/2 - roadWidth/2, canvas.width, roadWidth);
+                break;
+        }
+        
+        container.appendChild(canvas);
+    }
+
+    // 辅助方法：绘制箭头
+    drawArrow(ctx, x, y, size, rotation = 0) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rotation);
+        
+        ctx.beginPath();
+        ctx.moveTo(-size/2, 0);
+        ctx.lineTo(size/2, 0);
+        ctx.lineTo(size/4, -size/4);
+        ctx.moveTo(size/2, 0);
+        ctx.lineTo(size/4, size/4);
+        ctx.stroke();
+        
+        ctx.restore();
+    }
+
+    showSkillDetail(skill) {
+        alert(skill.description);  // 临时使用alert，后续可以改为更优雅的提示框
+    }
+
+    equipSkill(skill) {
+        // 找到一个空的技能槽或者可以替换的槽
+        let slotIndex = this.skillSlots.findIndex(slot => slot === null);
+        if (slotIndex === -1) {
+            // 如果没有空槽，使用第一个槽
+            slotIndex = 0;
+        }
+        
+        this.skillSlots[slotIndex] = {...skill};
+        
+        // 更新技能槽显示
+        this.updateSkillSlots();
+        
+        // 关闭选择界面并继续游戏
+        document.getElementById('skillSelection').style.display = 'none';
+        this.skillSelectionActive = false;
+        this.isPlaying = true;
+    }
+
+    updateSkillSlots() {
+        const slots = document.getElementsByClassName('skill-slot');
+        Array.from(slots).forEach((slot, index) => {
+            slot.innerHTML = '';
+            if (this.skillSlots[index]) {
+                this.drawSkillIcon(slot, this.skillSlots[index]);
+            }
+        });
+    }
+
+    useSkill(slotIndex) {
+        if (!this.isPlaying || !this.skillSlots[slotIndex]) return;
+        
+        const skill = this.skillSlots[slotIndex];
+        
+        // 检查特殊关卡技能限制
+        if (skill.id === 'globalLight' && 
+            !['fog', 'lightning', 'breadcrumb'].includes(this.currentSpecialLevel)) {
+            return;
+        }
+        
+        // 使用技能
+        skill.effect();
+        
+        // 如果是主动技能，减少使用次数
+        if (skill.type === 'active') {
+            skill.uses--;
+            if (skill.uses <= 0) {
+                this.skillSlots[slotIndex] = null;
+            }
+            this.updateSkillSlots();
+        }
+    }
+
+    // 技能效果实现
+    useWallPass() {
+        // 获取重力方向
+        const gravityX = this.ball.acceleration.x;
+        const gravityY = this.ball.acceleration.y;
+        const magnitude = Math.sqrt(gravityX * gravityX + gravityY * gravityY);
+        
+        if (magnitude === 0) return;
+        
+        // 归一化重力向量
+        const dirX = gravityX / magnitude;
+        const dirY = gravityY / magnitude;
+        
+        // 检测前方的墙
+        const cellX = Math.floor((this.ball.x + dirX * this.cellSize) / this.cellSize);
+        const cellY = Math.floor((this.ball.y + dirY * this.cellSize) / this.cellSize);
+        
+        if (this.maze[cellY][cellX] === 1) {
+            // 传送到墙的另一边
+            this.ball.x += dirX * this.cellSize * 2;
+            this.ball.y += dirY * this.cellSize * 2;
+        }
+    }
+
+    useTimeStop() {
+        this.activeSkillEffects.timeStopActive = true;
+        this.activeSkillEffects.timeStopRemaining = 5000; // 5秒
+    }
+
+    useGlobalLight() {
+        this.activeSkillEffects.globalLightActive = true;
+        this.activeSkillEffects.globalLightRemaining = 5000; // 5秒
+    }
+
+    useTeleport() {
+        const currentDist = this.getDistanceToExit(this.ball.x, this.ball.y);
+        let newX, newY;
+        let attempts = 0;
+        const maxAttempts = 100;
+        
+        do {
+            const randomCell = this.getRandomEmptyCell();
+            newX = (randomCell.x + 0.5) * this.cellSize;
+            newY = (randomCell.y + 0.5) * this.cellSize;
+            attempts++;
+        } while (this.getDistanceToExit(newX, newY) >= currentDist && attempts < maxAttempts);
+        
+        if (attempts < maxAttempts) {
+            this.ball.x = newX;
+            this.ball.y = newY;
+        }
+    }
+
+    // 辅助方法：获取到终点的距离
+    getDistanceToExit(x, y) {
+        const exitX = (this.endX + 0.5) * this.cellSize;
+        const exitY = (this.endY + 0.5) * this.cellSize;
+        return Math.sqrt((x - exitX) * (x - exitX) + (y - exitY) * (y - exitY));
+    }
+
+    // 辅助方法：获取随机空白格子
+    getRandomEmptyCell() {
+        let x, y;
+        do {
+            x = Math.floor(Math.random() * this.maze[0].length);
+            y = Math.floor(Math.random() * this.maze.length);
+        } while (this.maze[y][x] !== 0);
+        return { x, y };
+    }
+
+    applySpeedBoost() {
+        // 实现Speed Boost技能的效果
+        console.log("Speed Boost skill effect should be applied here");
+    }
+
+    applyTimeBoots() {
+        // 实现Time Boots技能的效果
+        console.log("Time Boots skill effect should be applied here");
+    }
+
+    applyCornerSlow() {
+        // 实现Corner Slow技能的效果
+        console.log("Corner Slow skill effect should be applied here");
+    }
+
+    hasPassiveSkill(skillId) {
+        return this.skillSlots.some(slot => slot && slot.id === skillId);
+    }
+
+    isIntersection(x, y) {
+        let pathCount = 0;
+        // 检查上下左右四个方向是否有通路
+        if (y > 0 && this.maze[y-1][x] === 0) pathCount++;
+        if (y < this.maze.length-1 && this.maze[y+1][x] === 0) pathCount++;
+        if (x > 0 && this.maze[y][x-1] === 0) pathCount++;
+        if (x < this.maze[0].length-1 && this.maze[y][x+1] === 0) pathCount++;
+        return pathCount > 2;  // 如果有超过两个方向是通路，则认为是交叉路口
+    }
+
+    confirmBack() {
+        if (confirm('Do you want to return to the start page?')) {
+            this.returnToStart();
+        }
+    }
+    
+    returnToStart() {
+        // 返回开始界面
+        this.startPage.style.display = 'flex';
+        this.startGameButton.style.display = 'block';
+        this.modeSelect.style.display = 'none';
+        document.getElementById('game-container').style.display = 'none';
+        this.backButton.style.display = 'none';
+        
+        // 重置游戏状态
+        this.isPlaying = false;
+        this.resetGameState();
     }
 }
 

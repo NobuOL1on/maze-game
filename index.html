@@ -25,11 +25,39 @@
 
     <!-- 游戏容器 -->
     <div id="game-container" style="display: none;">
+        <!-- 返回按钮 -->
+        <button id="backButton" style="position: absolute; top: 10px; right: 10px; display: none; padding: 5px 10px; cursor: pointer;">
+            Back
+        </button>
         <!-- 倒计时显示（仅在Challenge模式下显示） -->
         <div id="countdown" style="text-align: center; font-family: monospace; font-size: 36px; letter-spacing: 2px; margin: 10px 0; display: none; color: #000;">
             <span id="timeLeft">00:30:000</span>
         </div>
         <canvas id="gameCanvas"></canvas>
+        <!-- 技能选择界面 -->
+        <div id="skillSelection" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.5);">
+            <div style="display: flex; gap: 20px;">
+                <!-- 技能1 -->
+                <div class="skill-option">
+                    <div class="skill-icon" style="width: 60px; height: 60px; border: 2px solid black; margin-bottom: 10px;"></div>
+                    <button class="detail-btn">Details</button>
+                    <button class="equip-btn">Equip</button>
+                </div>
+                <!-- 技能2 -->
+                <div class="skill-option">
+                    <div class="skill-icon" style="width: 60px; height: 60px; border: 2px solid black; margin-bottom: 10px;"></div>
+                    <button class="detail-btn">Details</button>
+                    <button class="equip-btn">Equip</button>
+                </div>
+            </div>
+        </div>
+        <!-- 技能槽 -->
+        <div id="skillSlots" style="display: none; margin-top: 10px; text-align: center;">
+            <div style="display: inline-flex; gap: 10px;">
+                <div class="skill-slot" style="width: 50px; height: 50px; border: 2px solid black; cursor: pointer;"></div>
+                <div class="skill-slot" style="width: 50px; height: 50px; border: 2px solid black; cursor: pointer;"></div>
+            </div>
+        </div>
         <div id="controls">
             <button id="startButton">Start Game</button>
             <button id="pauseButton" style="display: none;">Pause</button>
