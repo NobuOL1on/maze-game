@@ -428,7 +428,7 @@ class MazeGame {
                 // 绘制钥匙头部（圆圈）
                 this.ctx.beginPath();
                 this.ctx.arc(this.keyPosition.x, this.keyPosition.y - 5, 5, 0, Math.PI * 2);
-                this.ctx.fill();
+                this.ctx.stroke();  // 改用描边而不是填充
                 
                 // 绘制钥匙柄（竖线）
                 this.ctx.beginPath();
