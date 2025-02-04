@@ -84,6 +84,7 @@ class MazeGame {
 
         // 添加面包屑轨迹存储
         this.breadcrumbs = new Set();
+        this.lastBreadcrumbPosition = { x: 0, y: 0 };  // 记录上一个面包屑位置
 
         this.init();
     }
@@ -257,7 +258,17 @@ class MazeGame {
         if (this.currentSpecialLevel === 'breadcrumb') {
             const cellX = Math.floor(this.ball.x / this.cellSize);
             const cellY = Math.floor(this.ball.y / this.cellSize);
-            this.breadcrumbs.add(`${cellX},${cellY}`);
+            
+            // 计算与上一个面包屑位置的距离
+            const dx = cellX - this.lastBreadcrumbPosition.x;
+            const dy = cellY - this.lastBreadcrumbPosition.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            // 只有当移动距离超过1个单元格时才记录新的面包屑
+            if (distance >= 1) {
+                this.breadcrumbs.add(`${cellX},${cellY}`);
+                this.lastBreadcrumbPosition = { x: cellX, y: cellY };
+            }
         }
     }
 
@@ -410,6 +421,11 @@ class MazeGame {
 
         // 重置面包屑
         this.breadcrumbs.clear();
+        // 重置最后面包屑位置
+        this.lastBreadcrumbPosition = {
+            x: Math.floor(this.ball.x / this.cellSize),
+            y: Math.floor(this.ball.y / this.cellSize)
+        };
 
         // 调整画布大小
         this.canvas.width = width * this.cellSize;
