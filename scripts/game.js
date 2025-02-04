@@ -334,19 +334,6 @@ class MazeGame {
                     if (cell === 1) {
                         this.ctx.fillStyle = '#000';
                         this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
-                    } else if (cell === 3) {
-                        this.ctx.beginPath();
-                        this.ctx.strokeStyle = '#000';
-                        this.ctx.lineWidth = 2;
-                        const radius = this.cellSize * 0.3;
-                        this.ctx.arc(
-                            cellX + this.cellSize / 2,
-                            cellY + this.cellSize / 2,
-                            radius,
-                            0,
-                            Math.PI * 2
-                        );
-                        this.ctx.stroke();
                     }
                 }
             }
@@ -359,7 +346,7 @@ class MazeGame {
                     this.ctx.arc(
                         this.breadcrumbs[i].x,
                         this.breadcrumbs[i].y,
-                        this.ball.radius * 2,  // 使用和视野范围相同的半径
+                        this.ball.radius * 2,
                         0,
                         Math.PI * 2
                     );
@@ -376,6 +363,28 @@ class MazeGame {
             this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 2, 0, Math.PI * 2);
             this.ctx.fill();
             this.ctx.restore();
+
+            // 最后绘制终点圆圈，确保始终可见
+            for (let y = 0; y < this.maze.length; y++) {
+                for (let x = 0; x < this.maze[0].length; x++) {
+                    if (this.maze[y][x] === 3) {
+                        const cellX = x * this.cellSize;
+                        const cellY = y * this.cellSize;
+                        this.ctx.beginPath();
+                        this.ctx.strokeStyle = '#fff';  // 改为白色以便在黑暗中更容易看见
+                        this.ctx.lineWidth = 2;
+                        const radius = this.cellSize * 0.3;
+                        this.ctx.arc(
+                            cellX + this.cellSize / 2,
+                            cellY + this.cellSize / 2,
+                            radius,
+                            0,
+                            Math.PI * 2
+                        );
+                        this.ctx.stroke();
+                    }
+                }
+            }
         } else if (this.currentSpecialLevel === 'lightning') {
             const currentTime = Date.now();
             if (currentTime - this.lightningTimer > this.nextLightning) {
