@@ -275,10 +275,50 @@ class MazeGame {
         if (this.currentSpecialLevel === 'fog') {
             this.ctx.fillStyle = '#000';
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            
+            // 先绘制墙壁
+            for (let y = 0; y < this.maze.length; y++) {
+                for (let x = 0; x < this.maze[0].length; x++) {
+                    const cell = this.maze[y][x];
+                    const cellX = x * this.cellSize;
+                    const cellY = y * this.cellSize;
+
+                    if (cell === 1) {
+                        this.ctx.fillStyle = '#000';
+                        this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
+                    } else if (cell === 3) {
+                        this.ctx.beginPath();
+                        this.ctx.strokeStyle = '#000';
+                        this.ctx.lineWidth = 2;
+                        const radius = this.cellSize * 0.3;
+                        this.ctx.arc(
+                            cellX + this.cellSize / 2,
+                            cellY + this.cellSize / 2,
+                            radius,
+                            0,
+                            Math.PI * 2
+                        );
+                        this.ctx.stroke();
+                    }
+                }
+            }
+            
+            // 创建可见区域
+            this.ctx.save();
+            this.ctx.globalCompositeOperation = 'destination-out';
+            this.ctx.fillStyle = '#000';
+            this.ctx.beginPath();
+            this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 10, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.restore();
+            
+            // 在可见区域内绘制白色地面
             this.ctx.save();
             this.ctx.beginPath();
-            this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 10, 0, Math.PI * 2); // 视野改为两倍
+            this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 10, 0, Math.PI * 2);
             this.ctx.clip();
+            this.ctx.fillStyle = '#fff';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         } else if (this.currentSpecialLevel === 'breadcrumb') {
             // 绘制黑色背景
             this.ctx.fillStyle = '#000';
