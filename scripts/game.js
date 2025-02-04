@@ -89,13 +89,27 @@ class MazeGame {
         this.breadcrumbs = [];  // 改为数组存储实际坐标
         this.lastBreadcrumbPosition = { x: 0, y: 0 };
 
+        this.gameMode = null; // 'challenge' 或 'infinite'
+        this.timeLeft = 30000; // 30秒，以毫秒为单位
+        this.countdownElement = document.getElementById('timeLeft');
+        this.countdownContainer = document.getElementById('countdown');
+        this.modeSelect = document.getElementById('modeSelect');
+        this.challengeModeButton = document.getElementById('challengeModeButton');
+        this.infiniteModeButton = document.getElementById('infiniteModeButton');
+
+        // 挑战模式相关
+        this.lastUpdateTime = null;  // 用于计算时间差
+        this.isGameOver = false;     // 游戏是否结束
+
         this.init();
     }
 
     init() {
         // 绑定开始按钮事件
-        this.startGameButton.addEventListener('click', () => this.startGame());
+        this.startGameButton.addEventListener('click', () => this.showModeSelect());
         this.permitButton.addEventListener('click', () => this.requestPermission());
+        this.challengeModeButton.addEventListener('click', () => this.startGame('challenge'));
+        this.infiniteModeButton.addEventListener('click', () => this.startGame('infinite'));
 
         // 检查设备方向感应API是否可用
         try {
@@ -144,18 +158,36 @@ class MazeGame {
         });
     }
 
-    startGame() {
+    showModeSelect() {
+        this.startGameButton.style.display = 'none';
+        this.modeSelect.style.display = 'flex';
+    }
+
+    startGame(mode) {
+        this.gameMode = mode;
         this.isPlaying = true;
+        this.isGameOver = false;
         this.startPage.style.display = 'none';
         document.getElementById('game-container').style.display = 'flex';
         this.canvas.style.display = 'block';
         document.getElementById('startButton').style.display = 'none';
-        // 每次开始游戏时重置游戏状态
+        
+        // 重置游戏状态
         this.resetGameState();
         this.resizeCanvas();
         window.addEventListener('resize', () => this.resizeCanvas());
         this.resetBall();
         this.generateMaze();
+        
+        if (mode === 'challenge') {
+            this.countdownContainer.style.display = 'block';
+            this.timeLeft = 30000; // 30秒
+            this.lastUpdateTime = Date.now();
+            this.updateCountdown();
+        } else {
+            this.countdownContainer.style.display = 'none';
+        }
+        
         this.startTime = Date.now();
         this.gameLoop();
     }
@@ -527,11 +559,182 @@ class MazeGame {
     }
 
     gameLoop() {
-        if (!this.isPlaying) return;
+        // 更新倒计时
+        if (this.gameMode === 'challenge' && !this.isGameOver) {
+            const currentTime = Date.now();
+            if (this.lastUpdateTime) {
+                this.timeLeft -= currentTime - this.lastUpdateTime;
+                if (this.timeLeft <= 0) {
+                    this.gameOver();
+                    return;
+                }
+                this.updateCountdown();
+            }
+            this.lastUpdateTime = currentTime;
+        }
 
+        if (!this.isPlaying) return;
+        
+        // 更新物理状态
         this.update();
+        // 绘制画面
         this.draw();
+        
         requestAnimationFrame(() => this.gameLoop());
+    }
+
+    gameOver() {
+        this.isGameOver = true;
+        this.isPlaying = false;
+        alert(`Game Over! You reached Level ${this.level}`);
+        // 返回开始界面
+        this.startPage.style.display = 'flex';
+        this.modeSelect.style.display = 'none';
+        document.getElementById('game-container').style.display = 'none';
+        this.countdownContainer.style.display = 'none';
+    }
+
+    calculateRewardTime() {
+        // 计算当前层级
+        const tier = Math.floor((this.level - 1) / 10);
+        
+        // 计算基础奖励时间A
+        let baseReward = 10; // 初始10秒
+        for (let i = 0; i < tier; i++) {
+            baseReward *= 1.1; // 每层级增加10%
+        }
+        baseReward = Number(baseReward.toFixed(2)); // 保留两位小数
+        
+        // 根据特殊关卡类型计算最终奖励
+        let multiplier = 1;
+        if (this.currentSpecialLevel) {
+            switch (this.currentSpecialLevel) {
+                case 'fog':
+                case 'lightning':
+                case 'fakeExit':
+                    multiplier = 2;
+                    break;
+                case 'antiGravity':
+                case 'key':
+                    multiplier = 1.3;
+                    break;
+                case 'breadcrumb':
+                    multiplier = 1.6;
+                    break;
+            }
+        }
+        
+        return baseReward * multiplier * 1000; // 转换为毫秒
+    }
+
+    levelComplete() {
+        if (this.gameMode === 'challenge') {
+            // 添加奖励时间
+            const rewardTime = this.calculateRewardTime();
+            this.timeLeft += rewardTime;
+            this.updateCountdown();
+        }
+
+        const timeTaken = (Date.now() - this.startTime) / 1000;
+        this.levelTimes.push(timeTaken);
+
+        const averageTime = Math.floor(this.levelTimes.reduce((a, b) => a + b, 0) / this.levelTimes.length);
+
+        if (this.currentSpecialLevel === 'antiGravity' && timeTaken < 2 * averageTime) {
+            const reduction = averageTime * 0.1;
+            this.totalTime -= reduction * this.completedLevels;
+        } else if (this.currentSpecialLevel === 'fog' && timeTaken < 5 * averageTime) {
+            const reduction = averageTime * 0.1;
+            this.totalTime -= reduction * this.completedLevels;
+        }
+
+        this.level++;
+        localStorage.setItem('mazeLevel', this.level);
+        
+        if (this.level > this.highScore) {
+            this.highScore = this.level;
+            localStorage.setItem('mazeHighScore', this.highScore);
+        }
+        
+        this.generateMaze();
+    }
+
+    formatTime(seconds) {
+        const ms = Math.floor((seconds % 1) * 1000);
+        const s = Math.floor(seconds) % 60;
+        const m = Math.floor(seconds / 60) % 60;
+        const h = Math.floor(seconds / 3600);
+        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}:${ms.toString().padStart(3, '0')}`;
+    }
+
+    getRandomLightningInterval() {
+        return 2000 + Math.random() * 2000; // 平均3秒，范围2-4秒
+    }
+
+    showCompatibilityWarning() {
+        const warning = document.createElement('div');
+        warning.style.position = 'fixed';
+        warning.style.top = '50%';
+        warning.style.left = '50%';
+        warning.style.transform = 'translate(-50%, -50%)';
+        warning.style.background = 'white';
+        warning.style.padding = '20px';
+        warning.style.borderRadius = '10px';
+        warning.style.textAlign = 'center';
+        warning.innerHTML = `
+            <p>请在系统浏览器中打开此游戏</p>
+            <p>Please open this game in your system browser</p>
+        `;
+        document.body.appendChild(warning);
+    }
+
+    clearInvalidData() {
+        // 如果存储的数据无效，清除所有游戏相关的本地存储
+        try {
+            const level = parseInt(localStorage.getItem('mazeLevel'));
+            if (isNaN(level) || level < 1) {
+                localStorage.removeItem('mazeLevel');
+                localStorage.removeItem('mazeHighScore');
+            }
+        } catch (e) {
+            localStorage.clear();
+        }
+    }
+
+    resetGameState() {
+        // 重置所有游戏状态
+        this.level = 1;
+        this.highScore = parseInt(localStorage.getItem('mazeHighScore')) || 0;
+        this.maze = [];
+        this.cellSize = 30;  // 添加单元格尺寸
+        this.levelTimes = [];
+        this.totalTime = 0;
+        this.completedLevels = 0;
+        this.currentSpecialLevel = null;
+        this.endX = 0;  // 添加终点坐标
+        this.endY = 0;
+        // 重置小球状态
+        this.ball = {
+            x: 0,
+            y: 0,
+            radius: 10,
+            velocity: { x: 0, y: 0 },
+            acceleration: { x: 0, y: 0 }
+        };
+        this.hasKey = false;
+        this.keyPosition = { x: 0, y: 0 };
+        this.fakeExitPosition = { x: 0, y: 0 };
+    }
+
+    updateCountdown() {
+        if (this.gameMode !== 'challenge') return;
+        
+        const minutes = Math.floor(this.timeLeft / 60000);
+        const seconds = Math.floor((this.timeLeft % 60000) / 1000);
+        const milliseconds = this.timeLeft % 1000;
+        
+        this.countdownElement.textContent = 
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}:${milliseconds.toString().padStart(3, '0')}`;
     }
 
     // 添加迷宫生成方法
@@ -660,98 +863,6 @@ class MazeGame {
             x: fakeX,
             y: fakeY
         };
-    }
-
-    levelComplete() {
-        const timeTaken = (Date.now() - this.startTime) / 1000;
-        this.levelTimes.push(timeTaken);
-
-        const averageTime = Math.floor(this.levelTimes.reduce((a, b) => a + b, 0) / this.levelTimes.length);
-
-        if (this.currentSpecialLevel === 'antiGravity' && timeTaken < 2 * averageTime) {
-            const reduction = averageTime * 0.1;
-            this.totalTime -= reduction * this.completedLevels;
-        } else if (this.currentSpecialLevel === 'fog' && timeTaken < 5 * averageTime) {
-            const reduction = averageTime * 0.1;
-            this.totalTime -= reduction * this.completedLevels;
-        }
-
-        this.level++;
-        localStorage.setItem('mazeLevel', this.level);
-        
-        if (this.level > this.highScore) {
-            this.highScore = this.level;
-            localStorage.setItem('mazeHighScore', this.highScore);
-        }
-        
-        this.generateMaze();
-    }
-
-    formatTime(seconds) {
-        const ms = Math.floor((seconds % 1) * 1000);
-        const s = Math.floor(seconds) % 60;
-        const m = Math.floor(seconds / 60) % 60;
-        const h = Math.floor(seconds / 3600);
-        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}:${ms.toString().padStart(3, '0')}`;
-    }
-
-    getRandomLightningInterval() {
-        return 2000 + Math.random() * 2000; // 平均3秒，范围2-4秒
-    }
-
-    showCompatibilityWarning() {
-        const warning = document.createElement('div');
-        warning.style.position = 'fixed';
-        warning.style.top = '50%';
-        warning.style.left = '50%';
-        warning.style.transform = 'translate(-50%, -50%)';
-        warning.style.background = 'white';
-        warning.style.padding = '20px';
-        warning.style.borderRadius = '10px';
-        warning.style.textAlign = 'center';
-        warning.innerHTML = `
-            <p>请在系统浏览器中打开此游戏</p>
-            <p>Please open this game in your system browser</p>
-        `;
-        document.body.appendChild(warning);
-    }
-
-    clearInvalidData() {
-        // 如果存储的数据无效，清除所有游戏相关的本地存储
-        try {
-            const level = parseInt(localStorage.getItem('mazeLevel'));
-            if (isNaN(level) || level < 1) {
-                localStorage.removeItem('mazeLevel');
-                localStorage.removeItem('mazeHighScore');
-            }
-        } catch (e) {
-            localStorage.clear();
-        }
-    }
-
-    resetGameState() {
-        // 重置所有游戏状态
-        this.level = 1;
-        this.highScore = parseInt(localStorage.getItem('mazeHighScore')) || 0;
-        this.maze = [];
-        this.cellSize = 30;  // 添加单元格尺寸
-        this.levelTimes = [];
-        this.totalTime = 0;
-        this.completedLevels = 0;
-        this.currentSpecialLevel = null;
-        this.endX = 0;  // 添加终点坐标
-        this.endY = 0;
-        // 重置小球状态
-        this.ball = {
-            x: 0,
-            y: 0,
-            radius: 10,
-            velocity: { x: 0, y: 0 },
-            acceleration: { x: 0, y: 0 }
-        };
-        this.hasKey = false;
-        this.keyPosition = { x: 0, y: 0 };
-        this.fakeExitPosition = { x: 0, y: 0 };
     }
 }
 

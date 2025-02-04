@@ -10,11 +10,21 @@
     <!-- 开始页面 -->
     <div id="startPage" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; max-width: 800px; aspect-ratio: 3/4; background-color: #fff; color: #000;">
         <h1>DeepMaze</h1>
-        <button id="startGameButton">Start</button>
+        <button id="startGameButton">Start Game</button>
+        
+        <!-- 模式选择界面 -->
+        <div id="modeSelect" style="display: none; flex-direction: column; align-items: center; gap: 20px;">
+            <button id="challengeModeButton">Challenge Mode</button>
+            <button id="infiniteModeButton">Infinite Mode</button>
+        </div>
     </div>
 
     <!-- 游戏容器 -->
     <div id="game-container" style="display: none;">
+        <!-- 倒计时显示（仅在Challenge模式下显示） -->
+        <div id="countdown" style="text-align: center; font-size: 24px; margin: 10px 0; display: none;">
+            Time: <span id="timeLeft">00:30:000</span>
+        </div>
         <canvas id="gameCanvas"></canvas>
         <div id="controls">
             <button id="startButton">Start Game</button>
