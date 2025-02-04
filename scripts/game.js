@@ -1333,29 +1333,6 @@ class MazeGame {
     useGlobalLight() {
         this.activeSkillEffects.globalLightActive = true;
         this.activeSkillEffects.globalLightRemaining = 5000; // 5秒
-        
-        // 保存当前的特殊关卡状态
-        const originalSpecialLevel = this.currentSpecialLevel;
-        
-        // 创建一个临时的绘制函数来处理全局照亮效果
-        const drawWithGlobalLight = () => {
-            if (this.activeSkillEffects.globalLightActive) {
-                // 临时移除特殊关卡效果
-                this.currentSpecialLevel = null;
-                // 绘制一帧
-                this.draw();
-                // 恢复特殊关卡效果
-                this.currentSpecialLevel = originalSpecialLevel;
-                
-                // 如果技能仍然激活，继续下一帧
-                if (this.activeSkillEffects.globalLightActive) {
-                    requestAnimationFrame(drawWithGlobalLight);
-                }
-            }
-        };
-        
-        // 开始绘制效果
-        drawWithGlobalLight();
     }
 
     useTeleport() {
