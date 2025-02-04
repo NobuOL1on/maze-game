@@ -10,6 +10,10 @@
     <!-- 开始页面 -->
     <div id="startPage" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; max-width: 800px; aspect-ratio: 3/4; background-color: #fff; color: #000;">
         <h1>DeepMaze</h1>
+        <div id="permission-prompt" style="display: none; margin: 20px 0;">
+            <p style="margin-bottom: 10px;">Game needs device orientation access</p>
+            <button id="permitButton">Allow Access</button>
+        </div>
         <button id="startGameButton">Start Game</button>
         
         <!-- 模式选择界面 -->
@@ -29,10 +33,6 @@
         <div id="controls">
             <button id="startButton">Start Game</button>
             <button id="pauseButton" style="display: none;">Pause</button>
-        </div>
-        <div id="permission-prompt" style="display: none;">
-            <p>Game needs device orientation access</p>
-            <button id="permitButton">Allow Access</button>
         </div>
     </div>
     
