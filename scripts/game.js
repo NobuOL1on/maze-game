@@ -388,6 +388,8 @@ class MazeGame {
                 this.activeSkillEffects.globalLightRemaining -= currentTime - this.lastUpdateTime;
                 if (this.activeSkillEffects.globalLightRemaining <= 0) {
                     this.activeSkillEffects.globalLightActive = false;
+                    // 重新绘制以恢复特殊效果
+                    this.draw();
                 }
             }
         }
@@ -467,10 +469,15 @@ class MazeGame {
         if (this.currentSpecialLevel === 'fog' || 
             this.currentSpecialLevel === 'lightning' || 
             this.currentSpecialLevel === 'breadcrumb') {
-            // 如果全局照明技能激活，则不应用特殊效果
+            
             if (this.activeSkillEffects.globalLightActive) {
-                // 绘制普通迷宫
-                this.drawNormalMaze();
+                // 在全局照亮效果下，先绘制普通迷宫
+                this.drawMaze();
+                this.drawBall();
+                this.drawExit();
+                if (this.currentSpecialLevel === 'key' && !this.hasKey) {
+                    this.drawKey();
+                }
             } else {
                 // 应用特殊效果
                 if (this.currentSpecialLevel === 'fog') {
@@ -668,68 +675,18 @@ class MazeGame {
                     this.ctx.stroke();
                 }
             }
-        }
-
-        for (let y = 0; y < this.maze.length; y++) {
-            for (let x = 0; x < this.maze[0].length; x++) {
-                const cell = this.maze[y][x];
-                const cellX = x * this.cellSize;
-                const cellY = y * this.cellSize;
-
-                this.ctx.fillStyle = cell === 1 ? '#000' : '#fff';
-
-                if (cell === 1) {
-                    this.ctx.fillRect(cellX, cellY, this.cellSize, this.cellSize);
-                } else if (cell === 3) {
-                    this.ctx.beginPath();
-                    this.ctx.strokeStyle = '#000';
-                    this.ctx.lineWidth = 2;
-                    const radius = this.cellSize * 0.3;
-                    this.ctx.arc(
-                        cellX + this.cellSize / 2,
-                        cellY + this.cellSize / 2,
-                        radius,
-                        0,
-                        Math.PI * 2
-                    );
-                    this.ctx.stroke();
-                }
+        } else {
+            // 普通关卡
+            this.drawMaze();
+            this.drawBall();
+            this.drawExit();
+            if (this.currentSpecialLevel === 'key' && !this.hasKey) {
+                this.drawKey();
             }
         }
 
-        if (this.currentSpecialLevel === 'fog' || this.currentSpecialLevel === 'lightning' || this.currentSpecialLevel === 'breadcrumb' || this.currentSpecialLevel === 'key' || this.currentSpecialLevel === 'fakeExit') {
-            this.ctx.restore();
-        }
-
-        // 绘制小球
-        this.ctx.beginPath();
-        this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius, 0, Math.PI * 2);
-        // 如果是闪电关卡，添加白色轮廓
-        if (this.currentSpecialLevel === 'lightning') {
-            this.ctx.strokeStyle = '#fff';
-            this.ctx.lineWidth = 2;
-            this.ctx.stroke();
-        }
-        this.ctx.fillStyle = '#000';
-        this.ctx.fill();
-        this.ctx.closePath();
-
-        // 在页面左上角绘制关卡信息
-        this.ctx.fillStyle = '#fff'; // 改为白色
-        this.ctx.font = 'bold 24px Arial';
-        let levelText = `LEVEL ${this.level}`;
-        if (this.currentSpecialLevel) {
-            const specialLevelNames = {
-                'fog': 'Fog',
-                'antiGravity': 'Anti-Gravity',
-                'lightning': 'Lightning',
-                'breadcrumb': 'Breadcrumb',
-                'key': 'Key',
-                'fakeExit': 'Fake Exit'
-            };
-            levelText += ` - ${specialLevelNames[this.currentSpecialLevel]}`;
-        }
-        this.ctx.fillText(levelText, 10, 30);
+        // 绘制关卡信息
+        this.drawLevelInfo();
     }
 
     gameLoop() {
@@ -1109,8 +1066,7 @@ class MazeGame {
 
     drawSkillIcon(container, skill) {
         const canvas = document.createElement('canvas');
-        // 使用容器的实际尺寸
-        const size = container.clientWidth || 60; // 如果容器尺寸未定义，使用默认值60
+        const size = container.clientWidth || 60;
         canvas.width = size;
         canvas.height = size;
         const ctx = canvas.getContext('2d');
@@ -1118,12 +1074,11 @@ class MazeGame {
         ctx.strokeStyle = '#000';
         ctx.lineWidth = 2;
         
-        // 根据技能类型绘制不同的图标
-        if (!skill || !skill.id) return;  // 添加安全检查
+        if (!skill || !skill.id) return;
         
-        // 清除画布
         ctx.clearRect(0, 0, size, size);
         
+        // 绘制技能图标
         switch(skill.id) {
             case 'wallPass':
                 // 三个箭头穿过平行四边形
@@ -1211,10 +1166,17 @@ class MazeGame {
                 break;
         }
         
-        // 清除容器中的现有内容
+        // 如果是主动技能，添加剩余次数
+        if (skill.type === 'active' && typeof skill.uses === 'number') {
+            ctx.fillStyle = '#000';
+            ctx.font = `${size * 0.3}px Arial`;  // 字体大小为图标尺寸的30%
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(skill.uses.toString(), size - 5, size - 5);  // 在右下角绘制次数
+        }
+        
         container.innerHTML = '';
         container.appendChild(canvas);
-        // 确保canvas填满容器
         canvas.style.width = '100%';
         canvas.style.height = '100%';
     }
