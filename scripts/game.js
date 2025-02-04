@@ -464,6 +464,31 @@ class MazeGame {
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+        // 如果是钥匙关卡且还没获得钥匙，绘制钥匙
+        if (this.currentSpecialLevel === 'key' && !this.hasKey) {
+            this.ctx.fillStyle = '#000';  // 改为黑色
+            this.ctx.lineWidth = 2;
+            
+            // 绘制钥匙头部（圆圈）
+            this.ctx.beginPath();
+            this.ctx.arc(this.keyPosition.x, this.keyPosition.y - 5, 5, 0, Math.PI * 2);
+            this.ctx.stroke();  // 改用描边而不是填充
+            
+            // 绘制钥匙柄（竖线）
+            this.ctx.beginPath();
+            this.ctx.moveTo(this.keyPosition.x, this.keyPosition.y - 2);
+            this.ctx.lineTo(this.keyPosition.x, this.keyPosition.y + 8);
+            this.ctx.stroke();
+            
+            // 绘制钥匙齿（两根横线）
+            this.ctx.beginPath();
+            this.ctx.moveTo(this.keyPosition.x, this.keyPosition.y + 8);
+            this.ctx.lineTo(this.keyPosition.x + 6, this.keyPosition.y + 8);
+            this.ctx.moveTo(this.keyPosition.x, this.keyPosition.y + 6);
+            this.ctx.lineTo(this.keyPosition.x + 4, this.keyPosition.y + 6);
+            this.ctx.stroke();
+        }
+
         // 处理特殊关卡效果
         if (this.currentSpecialLevel === 'fog' || 
             this.currentSpecialLevel === 'lightning' || 
@@ -606,31 +631,6 @@ class MazeGame {
                         this.ctx.clip();
                     }
                 } else if (this.currentSpecialLevel === 'key') {
-                    // 如果还没获得钥匙，绘制钥匙
-                    if (!this.hasKey) {
-                        this.ctx.fillStyle = '#000';  // 改为黑色
-                        this.ctx.lineWidth = 2;
-                        
-                        // 绘制钥匙头部（圆圈）
-                        this.ctx.beginPath();
-                        this.ctx.arc(this.keyPosition.x, this.keyPosition.y - 5, 5, 0, Math.PI * 2);
-                        this.ctx.stroke();  // 改用描边而不是填充
-                        
-                        // 绘制钥匙柄（竖线）
-                        this.ctx.beginPath();
-                        this.ctx.moveTo(this.keyPosition.x, this.keyPosition.y - 2);
-                        this.ctx.lineTo(this.keyPosition.x, this.keyPosition.y + 8);
-                        this.ctx.stroke();
-                        
-                        // 绘制钥匙齿（两根横线）
-                        this.ctx.beginPath();
-                        this.ctx.moveTo(this.keyPosition.x, this.keyPosition.y + 8);
-                        this.ctx.lineTo(this.keyPosition.x + 6, this.keyPosition.y + 8);
-                        this.ctx.moveTo(this.keyPosition.x, this.keyPosition.y + 6);
-                        this.ctx.lineTo(this.keyPosition.x + 4, this.keyPosition.y + 6);
-                        this.ctx.stroke();
-                    }
-
                     // 绘制终点圆圈
                     for (let y = 0; y < this.maze.length; y++) {
                         for (let x = 0; x < this.maze[0].length; x++) {
