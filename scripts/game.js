@@ -70,13 +70,14 @@ class MazeGame {
         };
 
         // 定义特殊关卡类型
-        this.specialLevels = ['fog', 'antiGravity', 'lightning', 'breadcrumb', 'key'];
+        this.specialLevels = ['fog', 'antiGravity', 'lightning', 'breadcrumb', 'key', 'fakeExit'];
         this.currentSpecialLevel = null;
         this.lightningTimer = 0; // 用于控制闪电的计时器
         this.lightningDuration = 1000; // 闪电持续时间（毫秒）
         this.nextLightning = this.getRandomLightningInterval(); // 下次闪电的时间
         this.hasKey = false;  // 是否获得钥匙
         this.keyPosition = { x: 0, y: 0 };  // 钥匙位置
+        this.fakeExitPosition = { x: 0, y: 0 };  // 假出口位置
 
         this.score = 0; // 初始化分数
         this.startTime = null; // 记录关卡开始时间
@@ -258,6 +259,13 @@ class MazeGame {
                 return;
             }
             this.levelComplete();
+        } else if (
+            this.currentSpecialLevel === 'fakeExit' &&
+            cellX === this.fakeExitPosition.x &&
+            cellY === this.fakeExitPosition.y
+        ) {
+            // 如果碰到假出口，重置到起点
+            this.resetBall();
         }
 
         // 检查是否获得钥匙
@@ -466,6 +474,21 @@ class MazeGame {
                     }
                 }
             }
+        } else if (this.currentSpecialLevel === 'fakeExit') {
+            const cellX = this.fakeExitPosition.x * this.cellSize;
+            const cellY = this.fakeExitPosition.y * this.cellSize;
+            this.ctx.beginPath();
+            this.ctx.strokeStyle = '#000';
+            this.ctx.lineWidth = 2;
+            const radius = this.cellSize * 0.3;
+            this.ctx.arc(
+                cellX + this.cellSize / 2,
+                cellY + this.cellSize / 2,
+                radius,
+                0,
+                Math.PI * 2
+            );
+            this.ctx.stroke();
         }
 
         for (let y = 0; y < this.maze.length; y++) {
@@ -495,7 +518,7 @@ class MazeGame {
             }
         }
 
-        if (this.currentSpecialLevel === 'fog' || this.currentSpecialLevel === 'lightning' || this.currentSpecialLevel === 'breadcrumb' || this.currentSpecialLevel === 'key') {
+        if (this.currentSpecialLevel === 'fog' || this.currentSpecialLevel === 'lightning' || this.currentSpecialLevel === 'breadcrumb' || this.currentSpecialLevel === 'key' || this.currentSpecialLevel === 'fakeExit') {
             this.ctx.restore();
         }
 
@@ -559,6 +582,8 @@ class MazeGame {
             if (this.currentSpecialLevel === 'key') {
                 this.hasKey = false;
                 this.placeKey();
+            } else if (this.currentSpecialLevel === 'fakeExit') {
+                this.placeFakeExit();
             }
         } else {
             this.currentSpecialLevel = null;
@@ -632,6 +657,24 @@ class MazeGame {
         this.keyPosition = {
             x: (keyX + 0.5) * this.cellSize,
             y: (keyY + 0.5) * this.cellSize
+        };
+    }
+
+    placeFakeExit() {
+        let fakeX, fakeY;
+        do {
+            fakeX = Math.floor(Math.random() * (this.maze[0].length - 2)) + 1;
+            fakeY = Math.floor(Math.random() * (this.maze.length - 2)) + 1;
+        } while (
+            this.maze[fakeY][fakeX] !== 0 || // 确保假出口在通道上
+            (fakeX < 3 && fakeY < 3) || // 不要太靠近起点
+            (Math.abs(fakeX - this.endX) < 4 && Math.abs(fakeY - this.endY) < 4) || // 不要太靠近真出口
+            this.maze[fakeY][fakeX] === 3  // 不能和真出口重叠
+        );
+        
+        this.fakeExitPosition = {
+            x: fakeX,
+            y: fakeY
         };
     }
 
@@ -724,6 +767,7 @@ class MazeGame {
         };
         this.hasKey = false;
         this.keyPosition = { x: 0, y: 0 };
+        this.fakeExitPosition = { x: 0, y: 0 };
     }
 }
 
