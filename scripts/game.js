@@ -233,7 +233,7 @@ class MazeGame {
         window.addEventListener('deviceorientation', (event) => {
             if (!this.isPlaying) return;
             
-            const sensitivity = 0.03;
+            const sensitivity = 0.1;  // 增加灵敏度
             const direction = this.currentSpecialLevel === 'antiGravity' ? -1 : 1;
             this.ball.acceleration.x = event.gamma * sensitivity * direction;
             this.ball.acceleration.y = event.beta * sensitivity * direction;
@@ -313,12 +313,17 @@ class MazeGame {
         this.lastUpdateTime = currentTime;
 
         // 更新小球速度
-        this.ball.velocity.x += this.ball.acceleration.x * deltaTime;
-        this.ball.velocity.y += this.ball.acceleration.y * deltaTime;
+        this.ball.velocity.x += this.ball.acceleration.x * 0.5;  // 使用固定的加速度系数
+        this.ball.velocity.y += this.ball.acceleration.y * 0.5;
 
-        // 应用阻尼
-        this.ball.velocity.x *= 0.98;
-        this.ball.velocity.y *= 0.98;
+        // 限制速度
+        const maxSpeed = 5;
+        const speed = Math.sqrt(this.ball.velocity.x ** 2 + this.ball.velocity.y ** 2);
+        if (speed > maxSpeed) {
+            const scale = maxSpeed / speed;
+            this.ball.velocity.x *= scale;
+            this.ball.velocity.y *= scale;
+        }
 
         // 检测碰撞
         const cellX = Math.floor(this.ball.x / this.cellSize);
@@ -1200,7 +1205,7 @@ class MazeGame {
     getDistanceToExit(x, y) {
         const exitX = (this.endX + 0.5) * this.cellSize;
         const exitY = (this.endY + 0.5) * this.cellSize;
-        return Math.sqrt((x - exitX) * (x - exitX) + (y - exitY) * (y - exitY));
+        return Math.sqrt((x - exitX) * (x - exitX) + (y - exitY) * (y - exitY);
     }
 
     // 辅助方法：获取随机空白格子
