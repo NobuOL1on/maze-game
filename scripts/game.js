@@ -177,7 +177,7 @@ class MazeGame {
 
         // 特殊关卡名称映射
         const specialLevelNames = {
-            'fog': 'Thick Fog',
+            'fog': 'Fog',
             'antiGravity': 'Anti-Gravity',
             'lightning': 'Lightning',
             'breadcrumb': 'Breadcrumb',
