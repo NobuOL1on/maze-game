@@ -186,7 +186,7 @@ class MazeGame {
             heavy: {
                 radius: 11.5,  // 大15%
                 mass: 1.15,    // 重15%
-                sensitivity: 0.7,  // 对重力感应反应更慢20%
+                sensitivity: 0.6,  // 对重力感应反应更慢30%（原来20%+新增10%）
                 color: '#333'
             },
             light: {
