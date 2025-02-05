@@ -184,15 +184,16 @@ class MazeGame {
                 color: '#000'
             },
             heavy: {
-                radius: 10.5,  // 大5%
-                mass: 1.05,    // 重5%
-                sensitivity: 0.8,  // 对重力感应反应更慢
+                radius: 11.5,  // 大15%
+                mass: 1.15,    // 重15%
+                sensitivity: 0.7,  // 对重力感应反应更慢20%
                 color: '#333'
             },
             light: {
                 radius: 5,     // 直径是默认的一半
                 mass: 0.5,
-                sensitivity: 1.2,  // 对重力感应反应更快
+                sensitivity: 1.5,  // 对重力感应立即反应
+                speedMultiplier: 0.9,  // 速度降低10%
                 color: '#666'
             }
         };
@@ -402,6 +403,12 @@ class MazeGame {
         // 更新速度
         this.ball.velocity.x += this.ball.acceleration.x;
         this.ball.velocity.y += this.ball.acceleration.y;
+        
+        // 如果是轻球，应用速度修正
+        if (this.selectedBallType === 'light') {
+            this.ball.velocity.x *= this.ballTypes.light.speedMultiplier;
+            this.ball.velocity.y *= this.ballTypes.light.speedMultiplier;
+        }
         
         // 限制速度
         const maxSpeed = 5; // 设置最大速度
@@ -1134,7 +1141,7 @@ class MazeGame {
         } while (
             this.maze[keyY][keyX] !== 0 || // 确保钥匙在通道上
             (keyX < 3 && keyY < 3) || // 不要太靠近起点
-            (Math.abs(keyX - this.endX) < 2 && Math.abs(keyY - this.endY) < 2) // 不要太靠近终点
+            (Math.abs(keyX - this.endX) < 2 && Math.abs(keyY - this.endY) < 2)) // 不要太靠近终点
         );
         
         this.keyPosition = {
