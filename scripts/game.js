@@ -333,6 +333,7 @@ class MazeGame {
     showModeSelect() {
         this.startGameButton.style.display = 'none';
         this.modeSelect.style.display = 'flex';
+        document.getElementById('ballSelector').style.display = 'block';
     }
 
     startGame(mode) {
@@ -340,7 +341,10 @@ class MazeGame {
         this.isPlaying = true;
         this.isGameOver = false;
         this.startPage.style.display = 'none';
+        this.modeSelect.style.display = 'none';
+        document.getElementById('ballSelector').style.display = 'none';
         document.getElementById('game-container').style.display = 'flex';
+        this.canvas.style.display = 'block';
         this.canvas.style.display = 'block';
         document.getElementById('startButton').style.display = 'none';
         
@@ -1724,6 +1728,7 @@ class MazeGame {
         this.startPage.style.display = 'flex';
         this.startGameButton.style.display = 'block';
         this.modeSelect.style.display = 'none';
+        document.getElementById('ballSelector').style.display = 'none';
         document.getElementById('game-container').style.display = 'none';
         this.backButton.style.display = 'none';
         
