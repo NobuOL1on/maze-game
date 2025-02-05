@@ -175,16 +175,6 @@ class MazeGame {
         this.skillSelectionLevel = 6; // 每6关触发技能选择
         this.skillSelectionActive = false;
 
-        // 特殊关卡名称映射
-        const specialLevelNames = {
-            'fog': 'Fog',
-            'antiGravity': 'Anti-Gravity',
-            'lightning': 'Lightning',
-            'breadcrumb': 'Breadcrumb',
-            'key': 'Find the Key',
-            'fakeExit': 'Fake Exit'
-        };
-
         this.init();
     }
 
@@ -738,6 +728,14 @@ class MazeGame {
         this.ctx.font = 'bold 24px Arial';
         let levelText = `LEVEL ${this.level}`;
         if (this.currentSpecialLevel) {
+            const specialLevelNames = {
+                'fog': 'Fog',
+                'antiGravity': 'Anti-Gravity',
+                'lightning': 'Lightning',
+                'breadcrumb': 'Breadcrumb',
+                'key': 'Key',
+                'fakeExit': 'Fake Exit'
+            };
             levelText += ` - ${specialLevelNames[this.currentSpecialLevel]}`;
         }
         this.ctx.fillText(levelText, 10, 30);
