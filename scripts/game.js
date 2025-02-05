@@ -192,8 +192,7 @@ class MazeGame {
             light: {
                 radius: 5,     // 直径是默认的一半
                 mass: 0.5,
-                sensitivity: 1.5,  // 对重力感应立即反应
-                speedMultiplier: 0.9,  // 速度降低10%
+                sensitivity: 1.2,  // 对重力感应反应更快
                 color: '#666'
             }
         };
@@ -333,7 +332,6 @@ class MazeGame {
     showModeSelect() {
         this.startGameButton.style.display = 'none';
         this.modeSelect.style.display = 'flex';
-        document.getElementById('ballSelector').style.display = 'block';
     }
 
     startGame(mode) {
@@ -341,10 +339,7 @@ class MazeGame {
         this.isPlaying = true;
         this.isGameOver = false;
         this.startPage.style.display = 'none';
-        this.modeSelect.style.display = 'none';
-        document.getElementById('ballSelector').style.display = 'none';
         document.getElementById('game-container').style.display = 'flex';
-        this.canvas.style.display = 'block';
         this.canvas.style.display = 'block';
         document.getElementById('startButton').style.display = 'none';
         
@@ -407,12 +402,6 @@ class MazeGame {
         // 更新速度
         this.ball.velocity.x += this.ball.acceleration.x;
         this.ball.velocity.y += this.ball.acceleration.y;
-        
-        // 如果是轻球，应用速度修正
-        if (this.selectedBallType === 'light') {
-            this.ball.velocity.x *= this.ballTypes.light.speedMultiplier;
-            this.ball.velocity.y *= this.ballTypes.light.speedMultiplier;
-        }
         
         // 限制速度
         const maxSpeed = 5; // 设置最大速度
@@ -1145,7 +1134,7 @@ class MazeGame {
         } while (
             this.maze[keyY][keyX] !== 0 || // 确保钥匙在通道上
             (keyX < 3 && keyY < 3) || // 不要太靠近起点
-            (Math.abs(keyX - this.endX) < 2 && Math.abs(keyY - this.endY) < 2)) // 不要太靠近终点
+            (Math.abs(keyX - this.endX) < 2 && Math.abs(keyY - this.endY) < 2) // 不要太靠近终点
         );
         
         this.keyPosition = {
@@ -1728,7 +1717,6 @@ class MazeGame {
         this.startPage.style.display = 'flex';
         this.startGameButton.style.display = 'block';
         this.modeSelect.style.display = 'none';
-        document.getElementById('ballSelector').style.display = 'none';
         document.getElementById('game-container').style.display = 'none';
         this.backButton.style.display = 'none';
         
