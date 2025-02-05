@@ -175,6 +175,30 @@ class MazeGame {
         this.skillSelectionLevel = 6; // 每6关触发技能选择
         this.skillSelectionActive = false;
 
+        // 小球类型定义
+        this.ballTypes = {
+            normal: {
+                radius: 10,
+                mass: 1,
+                sensitivity: 1,
+                color: '#000'
+            },
+            heavy: {
+                radius: 10.5,  // 大5%
+                mass: 1.05,    // 重5%
+                sensitivity: 0.8,  // 对重力感应反应更慢
+                color: '#333'
+            },
+            light: {
+                radius: 5,     // 直径是默认的一半
+                mass: 0.5,
+                sensitivity: 1.2,  // 对重力感应反应更快
+                color: '#666'
+            }
+        };
+        
+        this.selectedBallType = 'normal';  // 默认选择普通小球
+
         this.init();
     }
 
@@ -213,6 +237,69 @@ class MazeGame {
 
         // 绑定返回按钮事件
         this.backButton.addEventListener('click', () => this.confirmBack());
+
+        // 初始化小球选择器
+        this.initBallSelector();
+    }
+
+    initBallSelector() {
+        const carousel = document.querySelector('.ball-carousel');
+        const containers = document.querySelectorAll('.ball-container');
+        const dots = document.querySelectorAll('.dot');
+        let startX = 0;
+        let currentX = 0;
+        let currentIndex = 0;
+        
+        // 绘制预览小球
+        containers.forEach((container, index) => {
+            const canvas = container.querySelector('.ball-preview');
+            const ctx = canvas.getContext('2d');
+            const ballType = Object.values(this.ballTypes)[index];
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+            ctx.arc(
+                canvas.width/2,
+                canvas.height/2,
+                ballType.radius * 2,  // 预览时放大显示
+                0,
+                Math.PI * 2
+            );
+            ctx.fillStyle = ballType.color;
+            ctx.fill();
+        });
+        
+        // 触摸事件处理
+        carousel.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            currentX = carousel.scrollLeft;
+        });
+        
+        carousel.addEventListener('touchmove', (e) => {
+            const x = e.touches[0].clientX;
+            const walk = (startX - x) * 2;
+            carousel.scrollLeft = currentX + walk;
+        });
+        
+        carousel.addEventListener('touchend', () => {
+            const containerWidth = carousel.offsetWidth;
+            const newIndex = Math.round(carousel.scrollLeft / containerWidth);
+            currentIndex = Math.max(0, Math.min(newIndex, 2));
+            
+            // 更新选中的小球类型
+            this.selectedBallType = Object.keys(this.ballTypes)[currentIndex];
+            
+            // 更新圆点显示
+            dots.forEach((dot, i) => {
+                dot.classList.toggle('active', i === currentIndex);
+            });
+            
+            // 平滑滚动到选中位置
+            carousel.scrollTo({
+                left: currentIndex * containerWidth,
+                behavior: 'smooth'
+            });
+        });
     }
 
     async requestPermission() {
@@ -234,10 +321,11 @@ class MazeGame {
         window.addEventListener('deviceorientation', (event) => {
             if (!this.isPlaying) return;
             
-            const sensitivity = 0.03;
+            const baseSensitivity = 0.03;
+            const ballSensitivity = this.ballTypes[this.selectedBallType].sensitivity;
             const direction = this.currentSpecialLevel === 'antiGravity' ? -1 : 1;
-            this.ball.acceleration.x = event.gamma * sensitivity * direction;
-            this.ball.acceleration.y = event.beta * sensitivity * direction;
+            this.ball.acceleration.x = event.gamma * baseSensitivity * ballSensitivity * direction;
+            this.ball.acceleration.y = event.beta * baseSensitivity * ballSensitivity * direction;
         });
     }
 
@@ -296,6 +384,11 @@ class MazeGame {
         this.ball.y = (1.5 * this.cellSize);
         this.ball.velocity = { x: 0, y: 0 };
         this.ball.acceleration = { x: 0, y: 0 };
+        // 应用选中的小球类型
+        const ballType = this.ballTypes[this.selectedBallType];
+        this.ball.radius = ballType.radius;
+        this.ball.mass = ballType.mass;
+        this.ball.color = ballType.color;
     }
 
     resizeCanvas() {
@@ -719,7 +812,7 @@ class MazeGame {
             this.ctx.lineWidth = 2;
             this.ctx.stroke();
         }
-        this.ctx.fillStyle = '#000';
+        this.ctx.fillStyle = this.ball.color;
         this.ctx.fill();
         this.ctx.closePath();
 

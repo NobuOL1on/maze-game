@@ -153,4 +153,52 @@ button:active {
         height: 100vh;
         aspect-ratio: auto;
     }
+}
+
+/* 小球选择器样式 */
+.ball-carousel {
+    display: flex;
+    overflow: hidden;
+    width: 100%;
+    position: relative;
+    touch-action: pan-x;
+}
+
+.ball-container {
+    min-width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: translateX(0);
+    transition: transform 0.3s;
+}
+
+.ball-preview {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 10px;
+}
+
+.ball-name {
+    font-size: 14px;
+    color: #000;
+}
+
+.ball-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #ccc;
+    cursor: pointer;
+}
+
+.dot.active {
+    background-color: #000;
 } 
